@@ -1,0 +1,8 @@
+coverage
+pylint
+mypy
+codecov
+pytest
+pytest-cov
+black
+pre-commit
