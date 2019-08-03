@@ -13,7 +13,7 @@ class DefaultOwnerAndRepositoryGitHubIssueTestCase(GitHubIssueTestCase):
 
     def _set_issue_state(self, value: str):
         json_mock = MagicMock()
-        json_mock.json.return_value = {"state": value, "title": _ISSUE_TITLE}
+        json_mock.json.return_value = {"state": value}
         self._requests_mock.get.return_value = json_mock
 
     def _fail_open_state_check(self, msg: str = ""):
@@ -38,7 +38,6 @@ class NoRepositoryGitHubIssueTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCa
 
 
 _ISSUE_NUMBER = 123
-_ISSUE_TITLE = "Sample issue title"
 
 
 def get_test_case_name_without_index(test_case_func, _param_num, params):
@@ -80,7 +79,7 @@ class GitHubIssueStateChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCas
                 "link to issue",
                 f"https://github.com/radeklat/issue-watcher/issues/{_ISSUE_NUMBER}",
             ),
-            ("issue title", f"'{_ISSUE_TITLE}'"),
+            ("owner and repository", "'radeklat/issue-watcher'"),
             ("expected issue state", "no longer open\\."),
             ("issue number", f"#{_ISSUE_NUMBER}"),
         ],
@@ -141,3 +140,42 @@ class GitHubReleaseChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
         self._set_number_or_releases_to(self._CURRENT_NUMBER_OF_RELEASES - 1)
         with self.assertRaisesRegex(AssertionError, ".*improperly configured.*"):
             self.assert_no_new_release_is_available(self._CURRENT_NUMBER_OF_RELEASES)
+
+
+class GitHubLiveTestCase(GitHubIssueTestCase):
+    _OWNER = "radeklat"
+    _REPOSITORY = "issue-watcher"
+
+
+class GitHubLiveIssueStateChecksTestCase(GitHubLiveTestCase):
+    _OPEN_ISSUE_NUMBER = 1
+    _CLOSED_ISSUE_NUMBER = 2
+
+    def test_open_issue_check_fails_when_closed(self):
+        with self.assertRaises(AssertionError):
+            try:
+                self.assert_github_issue_is_open(self._CLOSED_ISSUE_NUMBER)
+            except AssertionError as ex:
+                print(ex)
+                raise ex
+
+    def test_closed_issue_check_fails_when_open(self):
+        with self.assertRaises(AssertionError):
+            self.assert_github_issue_is_closed(self._OPEN_ISSUE_NUMBER)
+
+    def test_open_issue_check_does_not_fail_when_open(self):
+        self.assert_github_issue_is_open(self._OPEN_ISSUE_NUMBER)
+
+    def test_closed_issue_check_does_not_fail_when_closed(self):
+        self.assert_github_issue_is_closed(self._CLOSED_ISSUE_NUMBER)
+
+
+class GitHubLiveReleaseChecksTestCase(GitHubLiveTestCase):
+    def test_release_number_check_fails_when_new_releases_available(self):
+        try:
+            self.assert_no_new_release_is_available(0)
+            self.fail("Expected AssertionError exception not raised.")
+        except AssertionError as ex:
+            print(ex)
+            if "New release of " not in str(ex):
+                raise ex

@@ -29,7 +29,6 @@ class GitHubIssueTestCase(TestCase):
 
         # Response documented at https://developer.github.com/v3/issues/
         response = requests.get(f"{self._URL_API}/repos/{issue_identifier}").json()
-        issue_title = response["title"]
 
         if msg:
             msg = f" {msg}"
@@ -37,8 +36,8 @@ class GitHubIssueTestCase(TestCase):
         self.assertEqual(
             response["state"],
             expected_state.value,
-            msg=f"GitHub issue #{issue_number} '{issue_title}' is no longer "
-            f"{expected_state.value}.{msg} Visit "
+            msg=f"GitHub issue #{issue_number} from '{self._OWNER}/{self._REPOSITORY}'"
+            f" is no longer {expected_state.value}.{msg} Visit "
             f"{self._URL_WEB}/{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}.",
         )
 
@@ -72,7 +71,7 @@ class GitHubIssueTestCase(TestCase):
 
         self.assertTrue(
             actual_release_count <= expected_number_of_releases,
-            f"New release of {self._OWNER}/{self._REPOSITORY} is available. Expected "
+            f"New release of '{self._OWNER}/{self._REPOSITORY}' is available. Expected "
             f"{expected_number_of_releases} releases but {actual_release_count} are now "
             f"available. Visit {self._URL_WEB}/{self._OWNER}/{self._REPOSITORY}/releases.",
         )
