@@ -2,6 +2,7 @@ from enum import Enum
 from unittest import TestCase
 
 import requests
+from requests import HTTPError, Response
 
 
 class GitHubIssueState(Enum):
@@ -14,6 +15,14 @@ class GitHubIssueTestCase(TestCase):
     _URL_WEB: str = "https://github.com"
     _OWNER: str = ""
     _REPOSITORY: str = ""
+
+    @staticmethod
+    def _handle_connection_error(response: Response):
+        if response.status_code != 200:
+            raise HTTPError(
+                f"Request to GitHub Failed.\n{response.status_code} {response.reason}\n"
+                f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
+            )
 
     def assert_github_issue_is_state(
         self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
@@ -28,13 +37,16 @@ class GitHubIssueTestCase(TestCase):
         issue_identifier = f"{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}"
 
         # Response documented at https://developer.github.com/v3/issues/
-        response = requests.get(f"{self._URL_API}/repos/{issue_identifier}").json()
+        response: Response = requests.get(f"{self._URL_API}/repos/{issue_identifier}")
+        self._handle_connection_error(response)
+
+        current_state = response.json()["state"]
 
         if msg:
             msg = f" {msg}"
 
         self.assertEqual(
-            response["state"],
+            current_state,
             expected_state.value,
             msg=f"GitHub issue #{issue_number} from '{self._OWNER}/{self._REPOSITORY}'"
             f" is no longer {expected_state.value}.{msg} Visit "
@@ -56,8 +68,10 @@ class GitHubIssueTestCase(TestCase):
         releases_url = (
             f"{self._URL_API}/repos/{self._OWNER}/{self._REPOSITORY}/git/refs/tags"
         )
-        releases = requests.get(releases_url).json()
-        actual_release_count = len(releases)
+        response: Response = requests.get(releases_url)
+        self._handle_connection_error(response)
+
+        actual_release_count = len(response.json())
 
         self.assertFalse(
             expected_number_of_releases > actual_release_count,

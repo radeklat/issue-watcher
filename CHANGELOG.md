@@ -16,5 +16,6 @@ Types of changes are:
 
 ### Added
 * Initial source code
+* Error handling printing out full message received.
 
 [Unreleased]: https://github.com/radeklat/issue-watcher/compare/initial...HEAD
