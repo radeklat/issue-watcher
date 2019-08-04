@@ -14,8 +14,12 @@ Types of changes are:
 
 ## Unreleased
 
+## [1.0.0] - 2019-08-04
+
 ### Added
 * Initial source code
 * Error handling printing out full message received.
+* Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/initial...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...HEAD
+[1.0.0]: https://github.com/radeklat/issue-watcher/compare/initial...releases/1.0.0
