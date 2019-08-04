@@ -1,5 +1,7 @@
 from enum import Enum
 from unittest import TestCase
+from time import time
+from datetime import timedelta
 
 import requests
 from requests import HTTPError, Response
@@ -17,22 +19,48 @@ class GitHubIssueTestCase(TestCase):
     _REPOSITORY: str = ""
 
     @staticmethod
+    def _handle_rate_limit_error(response: Response):
+        headers = response.headers
+        if not int(headers.get("X-RateLimit-Remaining", 1)):
+            message = response.json()["message"]
+            limit = headers.get("X-RateLimit-Limit")
+            now = int(time())
+            reset_delay = timedelta(
+                seconds=int(headers.get("X-RateLimit-Reset", now)) - now
+            )
+
+            raise HTTPError(
+                f"{message} Current quota: {limit}. Limit will reset in {reset_delay}."
+            )
+
+    @staticmethod
     def _handle_connection_error(response: Response):
+        GitHubIssueTestCase._handle_rate_limit_error(response)
+
         if response.status_code != 200:
             raise HTTPError(
                 f"Request to GitHub Failed.\n{response.status_code} {response.reason}\n"
                 f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
             )
 
-    def assert_github_issue_is_state(
-        self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
-    ) -> None:
+    def _check_attributes(self):
         for attribute in ["_OWNER", "_REPOSITORY"]:
             if not getattr(self, attribute):
                 raise RuntimeError(
                     f"Attribute '{attribute}' on class '{self.__class__.__name__}' must "
                     f"be set."
                 )
+
+    def assert_github_issue_is_state(
+        self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
+    ) -> None:
+        """
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
+        :raises RuntimeError: When :py:attr:`~GitHubIssueTestCase._OWNER` or
+            :py:attr:`~GitHubIssueTestCase._REPOSITORY` is not overwritten.
+        """
+        self._check_attributes()
 
         issue_identifier = f"{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}"
 
@@ -54,9 +82,17 @@ class GitHubIssueTestCase(TestCase):
         )
 
     def assert_github_issue_is_open(self, issue_number: int, msg: str = "") -> None:
+        """
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
+        """
         self.assert_github_issue_is_state(issue_number, GitHubIssueState.open, msg)
 
     def assert_github_issue_is_closed(self, issue_number: int, msg: str = "") -> None:
+        """
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
+        """
         self.assert_github_issue_is_state(issue_number, GitHubIssueState.closed, msg)
 
     def assert_no_new_release_is_available(self, expected_number_of_releases: int) -> None:
@@ -64,7 +100,12 @@ class GitHubIssueTestCase(TestCase):
         Checks number of releases of watched repository. Useful when issue is fixed (closed)
         but not released yet. This assertion will fail when the number of releases does not
         match.
+
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
         """
+        self._check_attributes()
+
         releases_url = (
             f"{self._URL_API}/repos/{self._OWNER}/{self._REPOSITORY}/git/refs/tags"
         )

@@ -31,5 +31,5 @@ GITHUB_UPDATE_SOURCES_TARGETS["src/.pylintrc"]="${SOURCES_FOLDER}/.pylintrc"
 #    [".pre-commit-config.yaml"]=".pre-commit-config.yaml"
 #)
 
-#COVERAGE_MIN_PERCENTAGE=0
+COVERAGE_MIN_PERCENTAGE=100
 #TODOS_LIMIT_PER_PERSON=10

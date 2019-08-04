@@ -1,27 +1,30 @@
-from unittest.mock import patch, MagicMock
+from time import time
+from unittest.mock import MagicMock, patch
 
 from parameterized import parameterized
+from requests import HTTPError
 
-from issuewatcher import GitHubIssueTestCase, GitHubIssueState
+from issuewatcher import GitHubIssueState, GitHubIssueTestCase
 
 
-class DefaultOwnerAndRepositoryGitHubIssueTestCase(GitHubIssueTestCase):
+class EmptyOwnerAndRepository(GitHubIssueTestCase):
     def setUp(self):
         requests_patcher = patch("issuewatcher.github.requests")
         self._requests_mock = requests_patcher.start()
         self.addCleanup(requests_patcher.stop)
 
-    def _set_issue_state(self, value: str):
-        json_mock = MagicMock()
-        json_mock.json.return_value = {"state": value}
-        self._requests_mock.get.return_value = json_mock
+    def _set_issue_state(self, value: str, status_code: int = 200):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"state": value}
+        mock_response.status_code = status_code
+        self._requests_mock.get.return_value = mock_response
 
     def _fail_open_state_check(self, msg: str = ""):
         self._set_issue_state(GitHubIssueState.closed.value)
         self.assert_github_issue_is_open(_ISSUE_NUMBER, msg)
 
 
-class NoOwnerGitHubIssueTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
+class EmptyOwner(EmptyOwnerAndRepository):
     _REPOSITORY = "issue-watcher"
 
     def test_it_checks_owner_is_set(self):
@@ -29,7 +32,7 @@ class NoOwnerGitHubIssueTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
             self._fail_open_state_check()
 
 
-class NoRepositoryGitHubIssueTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
+class EmptyRepository(EmptyOwnerAndRepository):
     _OWNER = "radeklat"
 
     def test_it_checks_owner_is_set(self):
@@ -40,14 +43,16 @@ class NoRepositoryGitHubIssueTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCa
 _ISSUE_NUMBER = 123
 
 
+class OwnerAndRepoSet(GitHubIssueTestCase):
+    _OWNER = "radeklat"
+    _REPOSITORY = "issue-watcher"
+
+
 def get_test_case_name_without_index(test_case_func, _param_num, params):
     return f"{test_case_func.__name__}_{parameterized.to_safe_name(params[0][0])}"
 
 
-class GitHubIssueStateChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
-    _OWNER = "radeklat"
-    _REPOSITORY = "issue-watcher"
-
+class StateChecks(EmptyOwnerAndRepository, OwnerAndRepoSet):
     @parameterized.expand(
         [
             ("open closed", GitHubIssueState.open, "closed"),
@@ -119,13 +124,14 @@ class GitHubIssueStateChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCas
         self.assert_github_issue_is_closed(_ISSUE_NUMBER)
 
 
-class GitHubReleaseChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
+class ReleaseChecks(EmptyOwnerAndRepository, OwnerAndRepoSet):
     _CURRENT_NUMBER_OF_RELEASES = 3
 
-    def _set_number_or_releases_to(self, count: int):
-        json_mock = MagicMock()
-        json_mock.json.return_value = [{}] * count
-        self._requests_mock.get.return_value = json_mock
+    def _set_number_or_releases_to(self, count: int, status_code: int = 200):
+        mock_response = MagicMock()
+        mock_response.json.return_value = [{}] * count
+        mock_response.status_code = status_code
+        self._requests_mock.get.return_value = mock_response
 
     def test_release_number_check_fails_when_new_releases_available(self):
         self._set_number_or_releases_to(self._CURRENT_NUMBER_OF_RELEASES + 1)
@@ -142,12 +148,38 @@ class GitHubReleaseChecksTestCase(DefaultOwnerAndRepositoryGitHubIssueTestCase):
             self.assert_no_new_release_is_available(self._CURRENT_NUMBER_OF_RELEASES)
 
 
-class GitHubLiveTestCase(GitHubIssueTestCase):
-    _OWNER = "radeklat"
-    _REPOSITORY = "issue-watcher"
+class ErrorHandling(StateChecks, ReleaseChecks):
+    _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"
+
+    def test_it_raises_http_error_when_status_not_200_in_state_check(self):
+        self._set_issue_state("open", 500)
+
+        with self.assertRaisesRegex(HTTPError, self._GENERIC_ERROR_MESSAGE_PATTERN):
+            self.assert_github_issue_is_open(_ISSUE_NUMBER)
+
+    def test_it_raises_http_error_when_status_not_200_in_releases_check(self):
+        self._set_number_or_releases_to(self._CURRENT_NUMBER_OF_RELEASES, 500)
+
+        with self.assertRaisesRegex(HTTPError, self._GENERIC_ERROR_MESSAGE_PATTERN):
+            self.assert_no_new_release_is_available(self._CURRENT_NUMBER_OF_RELEASES)
+
+    def test_it_raises_http_error_with_info_about_rate_limit_when_exceeded(self):
+        mock_message = "Message from GitHub"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"message": mock_message}
+        mock_response.status_code = 403
+        mock_response.headers = {
+            "X-RateLimit-Remaining": 0,
+            "X-RateLimit-Limit": 60,
+            "X-RateLimit-Reset": time() + 3600,
+        }
+        self._requests_mock.get.return_value = mock_response
+
+        with self.assertRaisesRegex(HTTPError, ".*Current quota:.*"):
+            self.assert_github_issue_is_open(_ISSUE_NUMBER)
 
 
-class GitHubLiveIssueStateChecksTestCase(GitHubLiveTestCase):
+class LiveStateChecks(OwnerAndRepoSet):
     _OPEN_ISSUE_NUMBER = 1
     _CLOSED_ISSUE_NUMBER = 2
 
@@ -170,7 +202,7 @@ class GitHubLiveIssueStateChecksTestCase(GitHubLiveTestCase):
         self.assert_github_issue_is_closed(self._CLOSED_ISSUE_NUMBER)
 
 
-class GitHubLiveReleaseChecksTestCase(GitHubLiveTestCase):
+class LiveReleaseChecks(OwnerAndRepoSet):
     def test_release_number_check_fails_when_new_releases_available(self):
         try:
             self.assert_no_new_release_is_available(0)
