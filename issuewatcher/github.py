@@ -1,7 +1,9 @@
-from enum import Enum
-from unittest import TestCase
-from time import time
+import os
+import warnings
 from datetime import timedelta
+from enum import Enum
+from time import time
+from unittest import TestCase
 
 import requests
 from requests import HTTPError, Response
@@ -17,6 +19,25 @@ class GitHubIssueTestCase(TestCase):
     _URL_WEB: str = "https://github.com"
     _OWNER: str = ""
     _REPOSITORY: str = ""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._auth = (
+            os.environ.get("GITHUB_USER_NAME", None),
+            os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN", None),
+        )
+        if not all(self._auth):
+            if any(self._auth):
+                warnings.warn(
+                    "issuewatcher seems to be improperly configured. Expected both "
+                    "'GITHUB_USER_NAME' and 'GITHUB_PERSONAL_ACCESS_TOKEN' environment "
+                    "variable to be set or both unset. However, only one is set, GitHub "
+                    "authentication remains disabled and API rate limiting will be "
+                    "limited.",
+                    RuntimeWarning,
+                )
+            self._auth = None
 
     @staticmethod
     def _handle_rate_limit_error(response: Response):
@@ -65,7 +86,9 @@ class GitHubIssueTestCase(TestCase):
         issue_identifier = f"{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}"
 
         # Response documented at https://developer.github.com/v3/issues/
-        response: Response = requests.get(f"{self._URL_API}/repos/{issue_identifier}")
+        response: Response = requests.get(
+            f"{self._URL_API}/repos/{issue_identifier}", auth=self._auth
+        )
         self._handle_connection_error(response)
 
         current_state = response.json()["state"]
@@ -109,7 +132,7 @@ class GitHubIssueTestCase(TestCase):
         releases_url = (
             f"{self._URL_API}/repos/{self._OWNER}/{self._REPOSITORY}/git/refs/tags"
         )
-        response: Response = requests.get(releases_url)
+        response: Response = requests.get(releases_url, auth=self._auth)
         self._handle_connection_error(response)
 
         actual_release_count = len(response.json())

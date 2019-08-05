@@ -14,6 +14,9 @@ Types of changes are:
 
 ## Unreleased
 
+### Added
+* `GITHUB_USER_NAME` and `GITHUB_PERSONAL_ACCESS_TOKEN` [environment variables](README.md#environment-variables) to allow authentication with GitHub API and higher API rate limit (5000/API token/hour instead of the default 60/host/hour).
+
 ## [1.0.0] - 2019-08-04
 
 ### Added
