@@ -20,7 +20,7 @@ matrix:
 install:
 - pip install -r requirements-test.txt
 script:
-- bash test.sh --noinstall --no-update --novirtualenv --strict
+- bash test.sh --noinstall --no-update --novirtualenv --strict --no-format
 after_success:
 - codecov
 deploy:
