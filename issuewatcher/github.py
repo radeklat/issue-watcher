@@ -17,30 +17,39 @@ class GitHubIssueState(Enum):
 class GitHubIssueTestCase(TestCase):
     _URL_API: str = "https://api.github.com"
     _URL_WEB: str = "https://github.com"
+    _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
+    _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
+
     _OWNER: str = ""
     _REPOSITORY: str = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._rate_limit_exceeded_extra_msg = ""
         self._auth = (
-            os.environ.get("GITHUB_USER_NAME", None),
-            os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN", None),
+            os.environ.get(self._ENV_VAR_USERNAME, None),
+            os.environ.get(self._ENV_VAR_TOKEN, None),
         )
         if not all(self._auth):
             if any(self._auth):
                 warnings.warn(
                     "issuewatcher seems to be improperly configured. Expected both "
-                    "'GITHUB_USER_NAME' and 'GITHUB_PERSONAL_ACCESS_TOKEN' environment "
+                    f"'{self._ENV_VAR_USERNAME}' and '{self._ENV_VAR_TOKEN}' environment "
                     "variable to be set or both unset. However, only one is set, GitHub "
                     "authentication remains disabled and API rate limiting will be "
                     "limited.",
                     RuntimeWarning,
                 )
             self._auth = None
+            self._rate_limit_exceeded_extra_msg = (
+                f" Consider setting '{self._ENV_VAR_USERNAME}' and "
+                f"'{self._ENV_VAR_TOKEN}' environment variables to turn on GitHub "
+                f"authentication and raise the API rate limit. "
+                f"See https://github.com/radeklat/issue-watcher#environment-variables"
+            )
 
-    @staticmethod
-    def _handle_rate_limit_error(response: Response):
+    def _handle_rate_limit_error(self, response: Response):
         headers = response.headers
         if not int(headers.get("X-RateLimit-Remaining", 1)):
             message = response.json()["message"]
@@ -52,11 +61,11 @@ class GitHubIssueTestCase(TestCase):
 
             raise HTTPError(
                 f"{message} Current quota: {limit}. Limit will reset in {reset_delay}."
+                f"{self._rate_limit_exceeded_extra_msg}"
             )
 
-    @staticmethod
-    def _handle_connection_error(response: Response):
-        GitHubIssueTestCase._handle_rate_limit_error(response)
+    def _handle_connection_error(self, response: Response):
+        self._handle_rate_limit_error(response)
 
         if response.status_code != 200:
             raise HTTPError(

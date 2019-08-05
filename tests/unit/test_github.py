@@ -1,6 +1,5 @@
 import warnings
 from time import time
-from typing import Any
 from unittest.mock import ANY, MagicMock, patch
 
 from parameterized import parameterized
@@ -25,6 +24,18 @@ class EmptyOwnerAndRepository(GitHubIssueTestCase):
         mock_response = MagicMock()
         mock_response.json.return_value = [{}] * count
         mock_response.status_code = status_code
+        self._requests_mock.get.return_value = mock_response
+
+    def _set_limit_exceeded(self):
+        mock_message = "Message from GitHub"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"message": mock_message}
+        mock_response.status_code = 403
+        mock_response.headers = {
+            "X-RateLimit-Remaining": 0,
+            "X-RateLimit-Limit": 60,
+            "X-RateLimit-Reset": time() + 3600,
+        }
         self._requests_mock.get.return_value = mock_response
 
     def _fail_open_state_check(self, msg: str = ""):
@@ -173,16 +184,7 @@ class HttpErrorRaising(MockedOwnerAndRepoSet):
             self.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
 
     def test_it_raises_with_info_about_rate_limit_when_exceeded(self):
-        mock_message = "Message from GitHub"
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"message": mock_message}
-        mock_response.status_code = 403
-        mock_response.headers = {
-            "X-RateLimit-Remaining": 0,
-            "X-RateLimit-Limit": 60,
-            "X-RateLimit-Reset": time() + 3600,
-        }
-        self._requests_mock.get.return_value = mock_response
+        self._set_limit_exceeded()
 
         with self.assertRaisesRegex(HTTPError, ".*Current quota:.*"):
             self.assert_github_issue_is_open(_ISSUE_NUMBER)
@@ -225,10 +227,12 @@ class LiveReleaseNumberCheck(OwnerAndRepoSet):
                 raise ex
 
 
+def noop(_self: MockedOwnerAndRepoSet):
+    pass
+
+
 class Authentication(MockedOwnerAndRepoSet):
-    def _init_with_user_name_token_and_test_auth(
-        self, username, token, auth: Any = "don't check"
-    ):
+    def _init_with_user_name_token_and_assert(self, username, token, assertion=noop):
         mock_environ = {"GITHUB_USER_NAME": username, "GITHUB_PERSONAL_ACCESS_TOKEN": token}
         with patch.dict("os.environ", mock_environ):
 
@@ -241,8 +245,7 @@ class Authentication(MockedOwnerAndRepoSet):
                     except AssertionError:
                         pass
 
-                    if auth != "don't check":
-                        self._requests_mock.get.assert_called_with(ANY, auth=auth)
+                    assertion(self)
 
             init_mock = InitMock()
             init_mock.setUp()
@@ -258,15 +261,18 @@ class Authentication(MockedOwnerAndRepoSet):
         name_func=get_test_case_name_without_index,
     )
     def test_it_is_not_used_when_no(self, _name, username, token):
+        def _assertion(outer_self: MockedOwnerAndRepoSet):
+            outer_self._requests_mock.get.assert_called_with(ANY, auth=None)
+
         try:
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            self._init_with_user_name_token_and_test_auth(username, token, None)
+            self._init_with_user_name_token_and_assert(username, token, _assertion)
         finally:
             warnings.resetwarnings()
 
     def test_it_displays_warning_when_partial_credentials_supplied(self):
         with self.assertWarnsRegex(RuntimeWarning, ".*improperly configured.*"):
-            self._init_with_user_name_token_and_test_auth("some username no token", "")
+            self._init_with_user_name_token_and_assert("some username no token", "")
 
     @parameterized.expand(
         [
@@ -277,9 +283,22 @@ class Authentication(MockedOwnerAndRepoSet):
     )
     def test_it_displays_no_warnings_when(self, _name, username, token):
         with warnings.catch_warnings(record=True) as warnings_list:
-            self._init_with_user_name_token_and_test_auth(username, token)
+            self._init_with_user_name_token_and_assert(username, token)
             self.assertEqual(len(warnings_list), 0)
 
     def test_it_is_used_when_credentials_supplied(self):
         username_token = ("some username", "some token")
-        self._init_with_user_name_token_and_test_auth(*username_token, username_token)
+
+        def _assertion(outer_self: MockedOwnerAndRepoSet):
+            outer_self._requests_mock.get.assert_called_with(ANY, auth=username_token)
+
+        self._init_with_user_name_token_and_assert(*username_token, _assertion)
+
+    def test_it_is_suggested_when_api_rate_exceeded(self):
+        def _assertion(outer_self: MockedOwnerAndRepoSet):
+            outer_self._set_limit_exceeded()
+
+            with outer_self.assertRaisesRegex(HTTPError, ".*Consider setting.*"):
+                outer_self.assert_github_issue_is_open(_ISSUE_NUMBER)
+
+        self._init_with_user_name_token_and_assert("", "", _assertion)
