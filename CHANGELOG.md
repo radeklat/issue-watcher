@@ -14,6 +14,8 @@ Types of changes are:
 
 ## Unreleased
 
+## [1.1.0] - 2019-08-05
+
 ### Added
 * `GITHUB_USER_NAME` and `GITHUB_PERSONAL_ACCESS_TOKEN` [environment variables](README.md#environment-variables) to allow authentication with GitHub API and higher API rate limit (5000/API token/hour instead of the default 60/host/hour).
 
@@ -24,5 +26,6 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...HEAD
+[1.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...releases/1.1.0
 [1.0.0]: https://github.com/radeklat/issue-watcher/compare/initial...releases/1.0.0
