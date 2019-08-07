@@ -9,6 +9,8 @@ DESCRIPTION = (
     "let you know fixed functionality is available."
 )
 
+with open("requirements.txt") as fp:
+    install_requires = fp.read()
 
 setuptools.setup(
     name=APPLICATION_NAME,
@@ -42,4 +44,5 @@ setuptools.setup(
     ],
     license="MIT",
     packages=setuptools.find_packages(exclude=["tests.*"]),
+    install_requires=install_requires,
 )
