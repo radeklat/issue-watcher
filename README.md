@@ -81,6 +81,6 @@ Once a new release is available, the test above will fail with:
     
 Now you can remove the tech debt and the release test case. However, keep the issue status test case to check for regression.
 
-#Environment variables
+# Environment variables
 
 `GITHUB_USER_NAME`, `GITHUB_PERSONAL_ACCESS_TOKEN`: Set to GitHub user name and [personal access token](https://github.com/settings/tokens) to raise API limit from 60 requests/hour for a host to 5000 requests/hour on that API key.
