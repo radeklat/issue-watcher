@@ -14,6 +14,11 @@ Types of changes are:
 
 ## Unreleased
 
+## [1.1.1] - 2019-08-08
+
+### Fixed
+* Drops Python 3.5 from classifiers as it was never supported.
+
 ## [1.1.0] - 2019-08-05
 
 ### Added
@@ -26,6 +31,7 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...HEAD
-[1.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...releases/1.1.0
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.1...HEAD
+[1.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...releases/1.1.1
+[1.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...releases/1.1.1
 [1.0.0]: https://github.com/radeklat/issue-watcher/compare/initial...releases/1.0.0
