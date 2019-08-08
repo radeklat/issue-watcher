@@ -5,6 +5,10 @@ This library provides Python `unittest` test cases that are watching when an iss
 
 [![Build Status](https://travis-ci.org/radeklat/issue-watcher.svg?branch=master)](https://travis-ci.org/radeklat/issue-watcher)
 [![codecov](https://codecov.io/gh/radeklat/issue-watcher/branch/master/graph/badge.svg)](https://codecov.io/gh/radeklat/issue-watcher)
+![PyPI - License](https://img.shields.io/pypi/l/issue-watcher)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/issue-watcher)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/radeklat/issue-watcher)
+![GitHub last commit](https://img.shields.io/github/last-commit/radeklat/issue-watcher)
 
 # Installation
 
