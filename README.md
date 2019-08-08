@@ -1,5 +1,7 @@
 # issue-watcher
-Python test cases watching when an issue is closed and failing a test to let you know fixed functionality is available. A good wayt to automatically manage and reduce know technical debt.
+Sometimes it happens that you discover a bug in a library that you are using and have to create a workaround (technical debt). However, it would be good to also remove the workaround once a bugfix is released.
+
+This library provides Python `unittest` test cases that are watching when an issue is closed and failing a test to let you know fixed functionality is available. A good way to automatically manage and reduce known technical debt.
 
 [![Build Status](https://travis-ci.org/radeklat/issue-watcher.svg?branch=master)](https://travis-ci.org/radeklat/issue-watcher)
 [![codecov](https://codecov.io/gh/radeklat/issue-watcher/branch/master/graph/badge.svg)](https://codecov.io/gh/radeklat/issue-watcher)
