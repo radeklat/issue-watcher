@@ -50,8 +50,8 @@ You would like to be notified once the issue is resolved (closed) and enable the
         
 Once the issue is closed on GitHub, the test will fail with the following error message:
 
-    GitHub issue #119 from 'pyupio/safety' is no longer open.
-    Visit https://github.com/pyupio/safety/issues/119.
+    GitHub issue #119 from 'pyupio/safety' is no longer open. Check if safety 
+    can be enabled on Windows. Visit https://github.com/pyupio/safety/issues/119.
     
 ## Issues is closed ...
 
