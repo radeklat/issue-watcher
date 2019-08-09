@@ -1,8 +1,6 @@
 import setuptools
 
-from issuewatcher import __version__
-
-APPLICATION_NAME = "issue-watcher"
+from issuewatcher import __version__, APPLICATION_NAME
 
 DESCRIPTION = (
     "Python test cases watching when an issue is closed and failing a test to "

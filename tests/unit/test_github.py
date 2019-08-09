@@ -6,6 +6,7 @@ from parameterized import parameterized
 from requests import HTTPError
 
 from issuewatcher import GitHubIssueState, GitHubIssueTestCase
+from tests.helpers.parameterized import get_test_case_name_without_index
 
 
 class EmptyOwnerAndRepository(GitHubIssueTestCase):
@@ -66,10 +67,6 @@ class OwnerAndRepoSet(GitHubIssueTestCase):
 
 class MockedOwnerAndRepoSet(OwnerAndRepoSet, EmptyOwnerAndRepository):
     pass
-
-
-def get_test_case_name_without_index(test_case_func, _param_num, params):
-    return f"{test_case_func.__name__}_{parameterized.to_safe_name(params[0][0])}"
 
 
 _ISSUE_NUMBER = 123
@@ -198,7 +195,7 @@ class LiveOpenIssueCheck(OwnerAndRepoSet):
     def test_it_fails_when_closed(self):
         with self.assertRaises(AssertionError):
             try:
-                self.assert_github_issue_is_open(_CLOSED_ISSUE_NUMBER)
+                self.assert_github_issue_is_open(_CLOSED_ISSUE_NUMBER, "Custom message.")
             except AssertionError as ex:
                 print(ex)
                 raise ex
