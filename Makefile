@@ -1,3 +1,5 @@
+RUN_TEST_NO_UPDATE:=bash test.sh --noinstall --no-update --novirtualenv --strict
+
 help: ## Prints this help/overview message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-17s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
@@ -11,7 +13,7 @@ upload-to-pypi:
 	python3 -m twine upload dist/*
 
 clean-build:  # Cleans the last build artifacts
-	rm -rf build dist
+	rm -rf build dist *.egg-info
 
 clean: clean-build ## Cleans all unncessary files
 	rm -rf cover .mypy_cache .venv* .coverage .pytest_cache
