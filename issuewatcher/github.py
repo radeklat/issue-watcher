@@ -3,15 +3,26 @@ import warnings
 from datetime import timedelta
 from enum import Enum
 from time import time
+from typing import Tuple, Optional
 from unittest import TestCase
 
 import requests
 from requests import HTTPError, Response
 
+from temporary_cache import TemporaryCache
+
 
 class GitHubIssueState(Enum):
     open = "open"
     closed = "closed"
+
+
+class _IssueStateCache(TemporaryCache):
+    pass
+
+
+class _ReleaseCountCache(TemporaryCache):
+    pass
 
 
 class GitHubIssueTestCase(TestCase):
@@ -26,8 +37,8 @@ class GitHubIssueTestCase(TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._rate_limit_exceeded_extra_msg = ""
-        self._auth = (
+        self._rate_limit_exceeded_extra_msg: str = ""
+        self._auth: Tuple[Optional[str], Optional[str]] = (
             os.environ.get(self._ENV_VAR_USERNAME, None),
             os.environ.get(self._ENV_VAR_TOKEN, None),
         )
