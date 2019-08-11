@@ -1,11 +1,11 @@
 from abc import ABC
 from collections import defaultdict
 from contextlib import contextmanager
-from tempfile import gettempdir
 from os.path import join
-from typing import DefaultDict
+from tempfile import gettempdir
+from typing import DefaultDict, Iterator
 
-from ujson import load, dump
+from ujson import dump, load
 
 
 class TemporaryCache(ABC):
@@ -16,7 +16,7 @@ class TemporaryCache(ABC):
         self._value_type = self.__class__.__name__.replace("Cache", "").replace("_", "")
 
     @contextmanager
-    def _session(self, save: bool) -> DefaultDict:
+    def _session(self, save: bool) -> Iterator[DefaultDict]:
         try:
             with open(self._TEMP_FILE_NAME, "r") as temp_file:
                 cache = load(temp_file)
@@ -46,3 +46,7 @@ class TemporaryCache(ABC):
             return self[key]
         except KeyError:
             return default
+
+    def clear(self):
+        with self._session(save=True) as cache:
+            cache.clear()

@@ -1,12 +1,10 @@
 import os
-from typing import Union, Dict, List
+from typing import Dict, List, Union
 from unittest import TestCase
 
-from parameterized import parameterized
 from ujson import dumps, loads
 
 from temporary_cache import TemporaryCache
-
 
 _PROJECT = "radeklat/issue-watcher"
 _VALUE = "test value"
@@ -66,6 +64,11 @@ class TempCache(TestCase):
 
         with self.assertRaises(KeyError):
             _value = _get_instance()["1"]
+
+    def test_it_can_be_cleared(self):
+        _create_temp_file({_PROJECT: {"Test-1": _VALUE}})
+        _get_instance().clear()
+        self.assertDictEqual(loads(_read_temp_file()), {})
 
     def test_it_separates_projects(self):
         _remove_temp_file()
