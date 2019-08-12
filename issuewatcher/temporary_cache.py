@@ -1,7 +1,10 @@
+import os
+import os.path
+import time
+import warnings
 from abc import ABC
 from collections import defaultdict
 from contextlib import contextmanager
-from os.path import join
 from tempfile import gettempdir
 from typing import DefaultDict, Iterator
 
@@ -9,11 +12,30 @@ from ujson import dump, load
 
 
 class TemporaryCache(ABC):
-    _TEMP_FILE_NAME = join(gettempdir(), "issue-watcher-cache.json")
+    _TEMP_FILE_NAME = os.path.join(gettempdir(), "issue-watcher-cache.json")
+    _ENV_VAR_EXPIRY = "CACHE_INVALIDATION_IN_SECONDS"
+    _DEFAULT_EXPIRY = 3600
 
     def __init__(self, project_identifier: str):
         self._project_identifier = project_identifier
         self._value_type = self.__class__.__name__.replace("Cache", "").replace("_", "")
+
+        try:
+            self._expire_in_seconds = int(
+                os.environ.get(self._ENV_VAR_EXPIRY, self._DEFAULT_EXPIRY)
+            )
+            if self._expire_in_seconds < 0:
+                raise ValueError("Cache invalidation must be 0 or positive integer.")
+        except ValueError:
+            value = os.environ[self._ENV_VAR_EXPIRY]
+            warnings.warn(
+                "issuewatcher seems to be improperly configured. Expected "
+                f"'{self._ENV_VAR_EXPIRY}' environment variable to be 0 or "
+                f"positive integer. However, value of '{value}' was used "
+                f"instead and will be ignored. Using default value of "
+                f"'{self._DEFAULT_EXPIRY}'.",
+                RuntimeWarning,
+            )
 
     @contextmanager
     def _session(self, save: bool) -> Iterator[DefaultDict]:
@@ -34,12 +56,30 @@ class TemporaryCache(ABC):
                     dump(cache, temp_file)
 
     def __setitem__(self, key: str, value: str):
-        with self._session(save=True) as cache:
-            cache[self._project_identifier][f"{self._value_type}-{key}"] = value
+        if self._expire_in_seconds:
+            with self._session(save=True) as cache:
+                cache[self._project_identifier][f"{self._value_type}-{key}"] = [
+                    value,
+                    int(time.time()),
+                ]
 
     def __getitem__(self, key: str) -> str:
+        if not self._expire_in_seconds:
+            raise KeyError("Cache is disabled.")
+
         with self._session(save=False) as cache:
-            return cache[self._project_identifier][f"{self._value_type}-{key}"]
+            try:
+                value, timestamp = cache[self._project_identifier][
+                    f"{self._value_type}-{key}"
+                ]
+                timestamp = int(timestamp)
+            except ValueError:
+                raise KeyError()
+
+        if timestamp < time.time() - self._expire_in_seconds:
+            raise KeyError()
+
+        return value
 
     def get(self, key: str, default=None):
         try:
