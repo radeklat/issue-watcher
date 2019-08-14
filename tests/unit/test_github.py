@@ -1,6 +1,6 @@
 import warnings
 from contextlib import contextmanager
-from time import time, perf_counter_ns
+from time import time, perf_counter
 from unittest.mock import ANY, MagicMock, patch
 
 from parameterized import parameterized
@@ -233,11 +233,11 @@ class LiveReleaseNumberCheck(OwnerAndRepoSet):
 
 @contextmanager
 def _timer():
-    start = perf_counter_ns()
+    start = perf_counter()
     try:
         yield
     finally:
-        print(f"Executed in {(perf_counter_ns() - start) / 1000}ms")
+        print(f"Executed in {(perf_counter() - start) * 1000000:.3f}us")
 
 
 class CachedTest(OwnerAndRepoSet):

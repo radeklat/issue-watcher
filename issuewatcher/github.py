@@ -119,9 +119,9 @@ class GitHubIssueTestCase(TestCase):
         self.assertEqual(
             current_state,
             expected_state.value,
-            msg=f"GitHub issue #{issue_number} from '{self._OWNER}/{self._REPOSITORY}'"
+            msg=f"GitHub issue #{issue_number} from '{self._repo_id}'"
             f" is no longer {expected_state.value}.{msg} Visit "
-            f"{self._URL_WEB}/{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}.",
+            f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}.",
         )
 
     def assert_github_issue_is_open(self, issue_number: int, msg: str = "") -> None:
@@ -167,13 +167,13 @@ class GitHubIssueTestCase(TestCase):
             f"{expected_number_of_releases} releases but repository reports "
             f"{actual_release_count} available releases at the moment. Set the "
             f"expected number of releases to the current number of releases "
-            f"({actual_release_count}). Visit {self._URL_WEB}/{self._OWNER}/"
-            f"{self._REPOSITORY}/releases to see all releases.",
+            f"({actual_release_count}). Visit {self._URL_WEB}/{self._repo_id}/releases "
+            f"to see all releases.",
         )
 
         self.assertTrue(
             actual_release_count <= expected_number_of_releases,
-            f"New release of '{self._OWNER}/{self._REPOSITORY}' is available. Expected "
+            f"New release of '{self._repo_id}' is available. Expected "
             f"{expected_number_of_releases} releases but {actual_release_count} are now "
-            f"available. Visit {self._URL_WEB}/{self._OWNER}/{self._REPOSITORY}/releases.",
+            f"available. Visit {self._URL_WEB}/{self._repo_id}/releases.",
         )
