@@ -14,6 +14,10 @@ Types of changes are:
 
 ## Unreleased
 
+### Added
+* Caching functionality to speed up tests involving network calls and prevent API quota depletion.
+* `CACHE_INVALIDATION_IN_SECONDS` [environment variables](README.md#environment-variables) for changing default cache invalidation period or disabling cache completely. 
+
 ## [1.1.1] - 2019-08-08
 
 ### Fixed
