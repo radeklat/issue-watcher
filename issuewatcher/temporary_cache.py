@@ -2,23 +2,21 @@ import os
 import os.path
 import time
 import warnings
-from abc import ABC
 from collections import defaultdict
 from contextlib import contextmanager
 from tempfile import gettempdir
-from typing import DefaultDict, Iterator
+from typing import DefaultDict, Iterator, Union
 
 from ujson import dump, load
 
 
-class TemporaryCache(ABC):
+class TemporaryCache:
     _TEMP_FILE_NAME = os.path.join(gettempdir(), "issue-watcher-cache.json")
     _ENV_VAR_EXPIRY = "CACHE_INVALIDATION_IN_SECONDS"
     _DEFAULT_EXPIRY = 3600
 
     def __init__(self, project_identifier: str):
         self._project_identifier = project_identifier
-        self._value_type = self.__class__.__name__.replace("Cache", "").replace("_", "")
 
         try:
             self._expire_in_seconds = int(
@@ -55,23 +53,18 @@ class TemporaryCache(ABC):
                 with open(self._TEMP_FILE_NAME, "w") as temp_file:
                     dump(cache, temp_file)
 
-    def __setitem__(self, key: str, value: str):
+    def __setitem__(self, key: Union[str, int], value: str):
         if self._expire_in_seconds:
             with self._session(save=True) as cache:
-                cache[self._project_identifier][f"{self._value_type}-{key}"] = [
-                    value,
-                    int(time.time()),
-                ]
+                cache[self._project_identifier][key] = [value, int(time.time())]
 
-    def __getitem__(self, key: str) -> str:
+    def __getitem__(self, key: Union[str, int]) -> str:
         if not self._expire_in_seconds:
             raise KeyError("Cache is disabled.")
 
         with self._session(save=False) as cache:
             try:
-                value, timestamp = cache[self._project_identifier][
-                    f"{self._value_type}-{key}"
-                ]
+                value, timestamp = cache[self._project_identifier][key]
                 timestamp = int(timestamp)
             except ValueError:
                 raise KeyError()
@@ -81,7 +74,7 @@ class TemporaryCache(ABC):
 
         return value
 
-    def get(self, key: str, default=None):
+    def get(self, key: Union[str, int], default=None):
         try:
             return self[key]
         except KeyError:

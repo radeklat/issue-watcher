@@ -1,19 +1,23 @@
 import warnings
-from time import time
+from contextlib import contextmanager
+from time import time, perf_counter_ns
 from unittest.mock import ANY, MagicMock, patch
 
 from parameterized import parameterized
 from requests import HTTPError
 
 from issuewatcher import GitHubIssueState, GitHubIssueTestCase
+from temporary_cache import TemporaryCache
 from tests.helpers.parameterized import get_test_case_name_without_index
 
 
 class EmptyOwnerAndRepository(GitHubIssueTestCase):
     def setUp(self):
+        super().setUp()
         requests_patcher = patch("issuewatcher.github.requests")
         self._requests_mock = requests_patcher.start()
         self.addCleanup(requests_patcher.stop)
+        self._cache._expire_in_seconds = 0
 
     def _set_issue_state(self, value: str, status_code: int = 200):
         mock_response = MagicMock()
@@ -64,9 +68,15 @@ class OwnerAndRepoSet(GitHubIssueTestCase):
     _OWNER = "radeklat"
     _REPOSITORY = "issue-watcher"
 
+    def setUp(self):
+        super().setUp()
+        self._cache._expire_in_seconds = 0
+
 
 class MockedOwnerAndRepoSet(OwnerAndRepoSet, EmptyOwnerAndRepository):
-    pass
+    def setUp(self):
+        EmptyOwnerAndRepository.setUp(self)
+        OwnerAndRepoSet.setUp(self)
 
 
 _ISSUE_NUMBER = 123
@@ -215,13 +225,41 @@ class LiveClosedIssueCheck(OwnerAndRepoSet):
 
 class LiveReleaseNumberCheck(OwnerAndRepoSet):
     def test_it_fails_when_new_releases_available(self):
+        with self.assertRaisesRegex(AssertionError, ".*New release of .*") as ex:
+            self.assert_no_new_release_is_available(0)
+
+        print(ex)  # for quick grab of string for documentation
+
+
+@contextmanager
+def _timer():
+    start = perf_counter_ns()
+    try:
+        yield
+    finally:
+        print(f"Executed in {(perf_counter_ns() - start) / 1000}ms")
+
+
+class CachedTest(OwnerAndRepoSet):
+    def setUp(self):
+        super().setUp()
+        self._cache._expire_in_seconds = TemporaryCache._DEFAULT_EXPIRY
+
+        # first call can be cache miss
+        self.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
         try:
             self.assert_no_new_release_is_available(0)
-            self.fail("Expected AssertionError exception not raised.")
-        except AssertionError as ex:
-            print(ex)
-            if "New release of " not in str(ex):
-                raise ex
+        except AssertionError:
+            pass
+
+    def test_closed_issue_check_does_not_fail_when_closed(self):
+        with _timer():
+            self.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
+
+    def test_release_check_fails_when_new_releases_available(self):
+        with _timer():
+            with self.assertRaisesRegex(AssertionError, ".*New release of .*"):
+                self.assert_no_new_release_is_available(0)
 
 
 def noop(_self: MockedOwnerAndRepoSet):

@@ -3,7 +3,7 @@ import warnings
 from datetime import timedelta
 from enum import Enum
 from time import time
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 from unittest import TestCase
 
 import requests
@@ -15,14 +15,6 @@ from temporary_cache import TemporaryCache
 class GitHubIssueState(Enum):
     open = "open"
     closed = "closed"
-
-
-class _IssueStateCache(TemporaryCache):
-    pass
-
-
-class _ReleaseCountCache(TemporaryCache):
-    pass
 
 
 class GitHubIssueTestCase(TestCase):
@@ -59,6 +51,9 @@ class GitHubIssueTestCase(TestCase):
                 f"authentication and raise the API rate limit. "
                 f"See https://github.com/radeklat/issue-watcher#environment-variables"
             )
+
+        self._repo_id = f"{self._OWNER}/{self._REPOSITORY}"
+        self._cache = TemporaryCache(self._repo_id)
 
     def _handle_rate_limit_error(self, response: Response):
         headers = response.headers
@@ -103,15 +98,20 @@ class GitHubIssueTestCase(TestCase):
         """
         self._check_attributes()
 
-        issue_identifier = f"{self._OWNER}/{self._REPOSITORY}/issues/{issue_number}"
+        issue_identifier = f"issues/{issue_number}"
 
-        # Response documented at https://developer.github.com/v3/issues/
-        response: Response = requests.get(
-            f"{self._URL_API}/repos/{issue_identifier}", auth=self._auth
-        )
-        self._handle_connection_error(response)
+        try:
+            current_state = self._cache[issue_identifier]
+            pass  # pylint: disable=unnecessary-pass; this line should be covered
+        except KeyError:
+            # Response documented at https://developer.github.com/v3/issues/
+            response: Response = requests.get(
+                f"{self._URL_API}/repos/{self._repo_id}/{issue_identifier}", auth=self._auth
+            )
+            self._handle_connection_error(response)
 
-        current_state = response.json()["state"]
+            current_state = response.json()["state"]
+            self._cache[issue_identifier] = current_state
 
         if msg:
             msg = f" {msg}"
@@ -149,13 +149,17 @@ class GitHubIssueTestCase(TestCase):
         """
         self._check_attributes()
 
-        releases_url = (
-            f"{self._URL_API}/repos/{self._OWNER}/{self._REPOSITORY}/git/refs/tags"
-        )
-        response: Response = requests.get(releases_url, auth=self._auth)
-        self._handle_connection_error(response)
+        releases_url = f"{self._URL_API}/repos/{self._repo_id}/git/refs/tags"
 
-        actual_release_count = len(response.json())
+        try:
+            actual_release_count = int(self._cache["release_count"])
+            pass  # pylint: disable=unnecessary-pass; this line should be covered
+        except (KeyError, ValueError):
+            response: Response = requests.get(releases_url, auth=self._auth)
+            self._handle_connection_error(response)
+
+            actual_release_count = len(response.json())
+            self._cache["release_count"] = str(actual_release_count)
 
         self.assertFalse(
             expected_number_of_releases > actual_release_count,
