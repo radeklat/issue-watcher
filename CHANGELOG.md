@@ -14,6 +14,8 @@ Types of changes are:
 
 ## Unreleased
 
+## [1.2.0] - 2019-08-14
+
 ### Added
 * Caching functionality to speed up tests involving network calls and prevent API quota depletion.
 * `CACHE_INVALIDATION_IN_SECONDS` [environment variables](README.md#environment-variables) for changing default cache invalidation period or disabling cache completely. 
@@ -35,7 +37,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.1...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.2.0...HEAD
+[1.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.1...releases/1.2.0
 [1.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...releases/1.1.1
 [1.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...releases/1.1.1
 [1.0.0]: https://github.com/radeklat/issue-watcher/compare/initial...releases/1.0.0
