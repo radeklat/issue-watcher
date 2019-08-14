@@ -90,3 +90,5 @@ Now you can remove the tech debt and the release test case. However, keep the is
 # Environment variables
 
 `GITHUB_USER_NAME`, `GITHUB_PERSONAL_ACCESS_TOKEN`: Set to GitHub user name and [personal access token](https://github.com/settings/tokens) to raise API limit from 60 requests/hour for a host to 5000 requests/hour on that API key.
+
+`CACHE_INVALIDATION_IN_SECONDS`: Set to number of seconds for invalidating cached data retrieved from HTTP calls. Default value is `3600` seconds (1 day). Use `0` to disable caching. This is useful if you run tests frequently to speed them up and prevent API quota depletion.
