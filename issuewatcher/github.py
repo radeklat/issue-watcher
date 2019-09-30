@@ -9,7 +9,7 @@ from unittest import TestCase
 import requests
 from requests import HTTPError, Response
 
-from temporary_cache import TemporaryCache
+from issuewatcher.temporary_cache import TemporaryCache
 
 
 class GitHubIssueState(Enum):
