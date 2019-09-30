@@ -18,6 +18,7 @@ after_success:
 - codecov
 deploy:
   provider: pypi
+  twine_version: 2.0.0
   user: "radeklat"
   password:
     secure: y8uBuwWCn1Vcqca4AsMzpOPgEfK0+ibUdpCmEYOEmNodC6k9NVyRK+EBsWvhuq/3EJSaLSNM84Z2rIgz/E+7o/BpsihNGYhFdombjKScaZ66nj+o+geIrHGEYT+Cxohq1RCfGh5tkdShsqlXwvSCoAbTVsPmopGJtx8ukIrAmOuevGC3VaacrJokqEySOrq+lOodg3ubQINgbN5sRD4n6drC+yMMzbtkZMCn2atI+744X2gYX9bSHF3T4fl8SIPV/uLsiGxD13cIUyLl6hC36C85VtF6HAWlSlXYG4H+WPV8MDayZpCEo/TXUrLI38/F+JCI1TvD3ty/vug+1Sbw0scFfJSos1GUXylSic3Z2nNj4d6lqk763MX0OauPvKEUQaHA5X/w2lVL3BV9S62Kemq17mm1WR9OVbdGrI+EiUPwSXyO7j8OfUn5tMaNiKFZ+WxmIl+I0buKpTlOpcMDSGtsQpLf3CTYMWxkt3Zzku+NnsYWZX+WT6dv0d7U1z/KFnzAKF8UlXTSfGnatN3etu7CVqF6MIp9t8rP0f63WfC6EYytKMPw1vhYRzbgt30eqQHumnfGydbrQOXdCtESxYixLQBn5OkJluyMjNmmqIGql+YSYR89+NC4/cOawyBxQIq9XANGNPx1pfrhkn0r2GRsS2RkEszkk09Ft0kAor0=
