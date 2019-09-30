@@ -4,10 +4,10 @@ python:
 - '3.6'
 matrix:
   include:
-  - name: "Python 3.6 on Bionic Linux"
+  - name: Python 3.6 on Bionic Linux
     python: 3.6
     dist: bionic
-  - name: "Python 3.7 on Bionic Linux"
+  - name: Python 3.7 on Bionic Linux
     python: 3.7
     dist: bionic
 install:
@@ -18,9 +18,9 @@ after_success:
 - codecov
 deploy:
   provider: pypi
-  user: "radeklat"
+  user: radeklat
   password:
-    secure: p1MgtP5Q4Xz5bf5Amkbcu/O70PBHXkZxwO11rZH0kepQbzhPI6Zgu9mlT8sRsSEykxdBz463hOPhlPTMH4Seb3EUXP34Yt7W26Txk8QyIDXSwFP0qIA3ZiP2HcCiVH+MN/j+g4+TddffWH0G3Z0zytnFe531jNoHxwTpD0YMMwnCRdalM35nnuap8hPLEsL02xP7d2ucgIJd2iaJElsGHHoxsU9/OSulbMn7nYTEDqtaQLoXtAmD8P91w5aneEMwr6pxBZ8K5JMskAartZNIrgwaPRmNRZD9i5lPcgf239+3attNK8CFd6ggba90ca9JSQOTbU+MwJXCF8x5pKphNmlF/1U3dBxta9N0AoxF4UFqulUxNR9T8XY+7zy2bFsI+f8BWGms+/EI37N6XZxj+GRv8HbqzE7x12V7xBZFR+vAZ7hfNOcpc8ejhERTS42XpEe5akXcRHvaiDGsIEXcKh9TtAuIxZR36or+PM0jsEg4ndQuKSB7PTNxVfrNwk2VNbXO4x/OQMoHwMom3Stmu2TEaz+kccPiXkOsU++gqm243sW+z/vs1bOFRxHnH3f0KQLrck4DBlmi30XkPzqvWKXC04Idm6FbAkUcXTRO58MfuybWjWeNXe/L/2frf1y6A7UkTpCVRGg0r2V8lCXsw7n7cDpDQxVGRy1ticAx4uE=
+    secure: jfXXh5dtSthIIWIIg0oup+Ehgzeq6ZEon8Ac5kReb+8sS54gDCQ0R2+27UmOQ6C/hECfmjeEbm8SSNEyZkmLcUxiJFQEVllKaqEdktpAEEEEMQHfxPJH45PwFFgw3UWqFcA/EePW2CcpyKNYyKg3eBJW9CD/5ChJtuxFvWkEDICz3uiex3shrJO6kM3Jvw+IoQwJfKJEcrSbzoWq3w/jIZZEGbQcv2+O94PO0k1Hn1YRvcobg7fNwfbw9AcxrZkCL+Bhj8C7+RjwHFAIZpdEgNjdqnO6JAqQLwU89ZzdwIQY1Jz8S6mIIgIMO0DBfuB4JHpVGQ1H3WQ710n2fV41tVMJmw+rjNgNov/3nfhzdIn5jYO+fkH/pOng9HriRcS+8CtOZE7oOtR67qp31/WKDwNPgd3pOcbqMUjvGT2xovQMGWAWZYIb//NqNFEMozLMmjpC//nCvsrw0WAg8UKjV6q5MJ4J0IRa1kKYkXbchoEw3bn0zzTo2CLJCxR+3rZ4Z1++/nB9JHGIfxkNJvJKjG74p19iy7VtXdnc93Clh5ToKtUVXhbSF7/wc39Q2F3Ogd+mWXx98IAqZYmMOEnM5etj2OFtrocyujIfzdTSYlU6tJbLve5h/JSKBQszntpszAlOK2tgPjTm5fffNbUHe1xINjMmqwkaZOg0kRTs4dk=
   on:
     branch: master
   skip_existing: true
