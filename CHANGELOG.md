@@ -14,6 +14,17 @@ Types of changes are:
 
 ## Unreleased
 
+## Added
+* Compatibility with pytest
+* Credentials supplied through constructor
+
+### Changed
+* Tests rewritten from unittest to pytest
+
+### Removed
+* Sub-classing of `unittest.TestCase`
+* Setting credentials through class attributes
+
 ## [1.2.0] - 2019-08-14
 
 ### Added

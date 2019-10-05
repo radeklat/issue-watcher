@@ -22,27 +22,11 @@ class GitHubIssueTestCase:
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
     _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
-    _OWNER: str = ""
-    _REPOSITORY: str = ""
-
     def __init__(self, owner: Optional[str] = None, repository: Optional[str] = None):
         """
-        All options for the calls can be supplied either via class attributes or
-        via constructor parameters. This is for compatibility reasons:
-
-            * Class can be sub-classed and used as a Mixin with
-                :py:class:`unittest.TestCase` - use class attributes.
-            * Class can use used as instance with pytest - use constructor parameters.
-
-        All options must be supplied by either of the methods. Mixing the methods
-        is not allowed. If both methods are used fully, constructor parameters
-        take precedence.
-
-        :param owner: Repository owner, matches :py:attr:`~GitHubIssueTestCase._OWNER`.
-        :param repository: Repository name, matches
-            :py:attr:`~GitHubIssueTestCase._REPOSITORY`.
-        :raises ValueError: When not all options are supplied or method of supplying
-            them is mixed.
+        :param owner: Repository owner.
+        :param repository: Repository name,.
+        :raises ValueError: When only owner or repository ame supplied.
         """
         self._rate_limit_exceeded_extra_msg: str = ""
         self._auth: Optional[Tuple[str, str]] = (
@@ -69,8 +53,6 @@ class GitHubIssueTestCase:
 
         if all([owner, repository]):
             self._repo_id = f"{owner}/{repository}"
-        elif all([self._OWNER, self._REPOSITORY]):
-            self._repo_id = f"{self._OWNER}/{self._REPOSITORY}"
         else:
             raise ValueError(
                 f"Repository name and owner must be both set either via class "

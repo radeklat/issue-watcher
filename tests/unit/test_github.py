@@ -9,20 +9,13 @@ from requests import HTTPError
 
 from issuewatcher import GitHubIssueState, GitHubIssueTestCase
 
+
 # False positive cause by pytest fixtures
 # pylint: disable=redefined-outer-name
 
 
-class _ClassWithRepositoryOnly(GitHubIssueTestCase):
-    _REPOSITORY = "issue-watcher"
-
-
-class _ClassWithOwnerOnly(GitHubIssueTestCase):
-    _OWNER = "radeklat"
-
-
-class OwnerAndRepoSet(_ClassWithRepositoryOnly, _ClassWithOwnerOnly):
-    pass
+_REPOSITORY = "issue-watcher"
+_OWNER = "radeklat"
 
 
 class TestRepositoryAttributeHandling:
@@ -30,37 +23,17 @@ class TestRepositoryAttributeHandling:
     @pytest.mark.parametrize(
         "testing_class,constructor_arguments",
         [
-            pytest.param(_ClassWithRepositoryOnly, [], id="class, name only"),
-            pytest.param(_ClassWithOwnerOnly, [], id="class, owner only"),
-            pytest.param(GitHubIssueTestCase, ["owner_only"], id="constructor, owner only"),
+            pytest.param(GitHubIssueTestCase, [_OWNER], id="repository name"),
             pytest.param(
-                GitHubIssueTestCase, [None, "repo_only"], id="constructor, name only"
-            ),
-            pytest.param(
-                _ClassWithOwnerOnly,
-                [None, "repo_only"],
-                id="class - owner, constructor - name",
-            ),
-            pytest.param(
-                _ClassWithRepositoryOnly,
-                ["owner_only"],
-                id="class - name, constructor - owner",
+                GitHubIssueTestCase, [None, _REPOSITORY], id="owner"
             ),
         ],
     )
-    def test_it_raises_error_when_some_parameters_are_missing(
+    def test_it_raises_error_when_constructor_argument_is_missing(
         testing_class: Type[GitHubIssueTestCase], constructor_arguments: List
     ):
         with pytest.raises(ValueError):
             testing_class(*constructor_arguments)
-
-    @staticmethod
-    def test_contructor_arguments_have_precedence_over_class_attributes():
-        owner = "other_owner"
-        name = "other_name"
-        instance = OwnerAndRepoSet(owner, name)
-
-        assert instance._repo_id == f"{owner}/{name}"
 
 
 _ISSUE_NUMBER = 123
@@ -79,7 +52,7 @@ def requests_mock():
 @pytest.fixture()
 def instance_no_caching():
     with patch.dict("os.environ", {"CACHE_INVALIDATION_IN_SECONDS": "0"}):
-        instance = OwnerAndRepoSet()
+        instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
 
     return instance
 
@@ -296,7 +269,7 @@ def _timer():
 
 @pytest.fixture()
 def instance_caching():
-    instance = OwnerAndRepoSet()
+    instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
 
     # first call can be cache miss
     instance.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
@@ -359,7 +332,7 @@ class TestAuthentication:
             },
         ):
             _set_issue_state(requests_mock, "open")
-            instance = OwnerAndRepoSet()
+            instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
             instance.assert_github_issue_is_open(_ISSUE_NUMBER)
             assertion(instance)
 
