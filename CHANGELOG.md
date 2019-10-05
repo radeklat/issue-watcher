@@ -20,6 +20,12 @@ Types of changes are:
 
 ### Changed
 * Tests rewritten from unittest to pytest
+* GitHub issue class and assertions drop duplicate or unnecessary information for their name:
+    * `GitHubIssueTestCase` -> `AssertGitHubIssue`
+    * `assert_github_issue_is_state` -> `is_state`
+    * `assert_github_issue_is_open` -> `is_open`
+    * `assert_github_issue_is_closed` -> `is_closed`
+    * `assert_no_new_release_is_available` -> `fix_not_released`
 
 ### Removed
 * Sub-classing of `unittest.TestCase`

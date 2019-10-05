@@ -7,7 +7,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from requests import HTTPError
 
-from issuewatcher import GitHubIssueState, GitHubIssueTestCase
+from issuewatcher import GitHubIssueState, AssertGitHubIssue
 
 
 # False positive cause by pytest fixtures
@@ -23,14 +23,12 @@ class TestRepositoryAttributeHandling:
     @pytest.mark.parametrize(
         "testing_class,constructor_arguments",
         [
-            pytest.param(GitHubIssueTestCase, [_OWNER], id="repository name"),
-            pytest.param(
-                GitHubIssueTestCase, [None, _REPOSITORY], id="owner"
-            ),
+            pytest.param(AssertGitHubIssue, [_OWNER], id="repository name"),
+            pytest.param(AssertGitHubIssue, [None, _REPOSITORY], id="owner"),
         ],
     )
     def test_it_raises_error_when_constructor_argument_is_missing(
-        testing_class: Type[GitHubIssueTestCase], constructor_arguments: List
+        testing_class: Type[AssertGitHubIssue], constructor_arguments: List
     ):
         with pytest.raises(ValueError):
             testing_class(*constructor_arguments)
@@ -50,11 +48,11 @@ def requests_mock():
 
 
 @pytest.fixture()
-def instance_no_caching():
+def assert_github_issue_no_cache():
     with patch.dict("os.environ", {"CACHE_INVALIDATION_IN_SECONDS": "0"}):
-        instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
+        assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
 
-    return instance
+    return assert_github_issue
 
 
 def _set_issue_state(req_mock: MagicMock, value: str, status_code: int = 200):
@@ -74,7 +72,7 @@ class TestStateCheck:
         ],
     )
     def test_it_fails_on_non_matching_state(
-        instance_no_caching: GitHubIssueTestCase,
+        assert_github_issue_no_cache: AssertGitHubIssue,
         requests_mock: MagicMock,
         expected_state: GitHubIssueState,
         returned_state: str,
@@ -82,7 +80,7 @@ class TestStateCheck:
         _set_issue_state(requests_mock, returned_state)
 
         with pytest.raises(AssertionError):
-            instance_no_caching.assert_github_issue_is_state(_ISSUE_NUMBER, expected_state)
+            assert_github_issue_no_cache.is_state(_ISSUE_NUMBER, expected_state)
 
     @staticmethod
     @pytest.mark.parametrize(
@@ -93,20 +91,20 @@ class TestStateCheck:
         ],
     )
     def test_it_does_not_fail_on_matching_state(
-        instance_no_caching: GitHubIssueTestCase,
+        assert_github_issue_no_cache: AssertGitHubIssue,
         requests_mock: MagicMock,
         expected_state: GitHubIssueState,
         returned_state: str,
     ):
         _set_issue_state(requests_mock, returned_state)
-        instance_no_caching.assert_github_issue_is_state(_ISSUE_NUMBER, expected_state)
+        assert_github_issue_no_cache.is_state(_ISSUE_NUMBER, expected_state)
 
 
 def _fail_open_state_check(
-    issue_test_case: GitHubIssueTestCase, req_mock: MagicMock, msg: str = ""
+    assert_github_issue: AssertGitHubIssue, req_mock: MagicMock, msg: str = ""
 ):
     _set_issue_state(req_mock, GitHubIssueState.closed.value)
-    issue_test_case.assert_github_issue_is_open(_ISSUE_NUMBER, msg)
+    assert_github_issue.is_open(_ISSUE_NUMBER, msg)
 
 
 class TestFailingStateCheck:
@@ -124,25 +122,27 @@ class TestFailingStateCheck:
         ],
     )
     def test_it_contains(
-        regexp: str, instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        regexp: str,
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
     ):
         with pytest.raises(AssertionError, match=f".*{regexp}.*"):
-            _fail_open_state_check(instance_no_caching, requests_mock)
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 
     @staticmethod
     def test_it_contains_custom_message_if_one_provided(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         msg = "Sample custom message"
         with pytest.raises(AssertionError, match=f".*open\\. {msg} Visit.*"):
-            _fail_open_state_check(instance_no_caching, requests_mock, msg=msg)
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock, msg=msg)
 
     @staticmethod
     def test_it_does_not_contains_custom_message_if_none_provided(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         with pytest.raises(AssertionError, match=f".*open\\. Visit.*"):
-            _fail_open_state_check(instance_no_caching, requests_mock)
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 
 
 _CURRENT_NUMBER_OF_RELEASES = 3
@@ -158,61 +158,55 @@ def _set_number_or_releases_to(req_mock: MagicMock, count: int, status_code: int
 class TestReleaseNumberCheck:
     @staticmethod
     def test_it_fails_when_new_releases_available(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES + 1)
         with pytest.raises(AssertionError, match="New release of .*"):
-            instance_no_caching.assert_no_new_release_is_available(
-                _CURRENT_NUMBER_OF_RELEASES
-            )
+            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_does_not_fail_when_expected_releases_available(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES)
-        instance_no_caching.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
+        assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_checks_if_release_number_is_properly_configured(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
         with pytest.raises(AssertionError, match=".*improperly configured.*"):
-            instance_no_caching.assert_no_new_release_is_available(
-                _CURRENT_NUMBER_OF_RELEASES
-            )
+            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
 
 
 class TestHttpErrorRaising:
     _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"
 
     def test_it_raises_when_status_not_200_in_state_check(
-        self, instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        self, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_issue_state(requests_mock, "open", 500)
 
         with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
-            instance_no_caching.assert_github_issue_is_open(_ISSUE_NUMBER)
+            assert_github_issue_no_cache.is_open(_ISSUE_NUMBER)
 
     def test_it_raises_when_status_not_200_in_releases_check(
-        self, instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        self, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES, 500)
 
         with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
-            instance_no_caching.assert_no_new_release_is_available(
-                _CURRENT_NUMBER_OF_RELEASES
-            )
+            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_raises_with_info_about_rate_limit_when_exceeded(
-        instance_no_caching: GitHubIssueTestCase, requests_mock: MagicMock
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_limit_exceeded(requests_mock)
 
         with pytest.raises(HTTPError, match=".*Current quota:.*"):
-            instance_no_caching.assert_github_issue_is_open(_ISSUE_NUMBER)
+            assert_github_issue_no_cache.is_open(_ISSUE_NUMBER)
 
 
 _OPEN_ISSUE_NUMBER = 1
@@ -221,10 +215,12 @@ _CLOSED_ISSUE_NUMBER = 2
 
 class TestChecksLive:
     @staticmethod
-    def test_open_issue_check_fails_when_closed(instance_no_caching: GitHubIssueTestCase):
+    def test_open_issue_check_fails_when_closed(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
         with pytest.raises(AssertionError):
             try:
-                instance_no_caching.assert_github_issue_is_open(
+                assert_github_issue_no_cache.is_open(
                     _CLOSED_ISSUE_NUMBER, "Custom message."
                 )
             except AssertionError as ex:
@@ -233,27 +229,29 @@ class TestChecksLive:
 
     @staticmethod
     def test_open_issue_check_does_not_fail_when_open(
-        instance_no_caching: GitHubIssueTestCase
+        assert_github_issue_no_cache: AssertGitHubIssue
     ):
-        instance_no_caching.assert_github_issue_is_open(_OPEN_ISSUE_NUMBER)
+        assert_github_issue_no_cache.is_open(_OPEN_ISSUE_NUMBER)
 
     @staticmethod
-    def test_closed_issue_check_fails_when_open(instance_no_caching: GitHubIssueTestCase):
+    def test_closed_issue_check_fails_when_open(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
         with pytest.raises(AssertionError):
-            instance_no_caching.assert_github_issue_is_closed(_OPEN_ISSUE_NUMBER)
+            assert_github_issue_no_cache.is_closed(_OPEN_ISSUE_NUMBER)
 
     @staticmethod
     def test_closed_issue_check_does_not_fail_when_closed(
-        instance_no_caching: GitHubIssueTestCase
+        assert_github_issue_no_cache: AssertGitHubIssue
     ):
-        instance_no_caching.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
+        assert_github_issue_no_cache.is_closed(_CLOSED_ISSUE_NUMBER)
 
     @staticmethod
     def test_release_number_check_fails_when_new_releases_available(
-        instance_no_caching: GitHubIssueTestCase
+        assert_github_issue_no_cache: AssertGitHubIssue
     ):
         with pytest.raises(AssertionError, match=".*New release of .*") as ex:
-            instance_no_caching.assert_no_new_release_is_available(0)
+            assert_github_issue_no_cache.fix_not_released(0)
 
         print(ex)  # for quick grab of string for documentation
 
@@ -268,37 +266,37 @@ def _timer():
 
 
 @pytest.fixture()
-def instance_caching():
-    instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
+def assert_github_issue_caching():
+    assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
 
     # first call can be cache miss
-    instance.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
+    assert_github_issue.is_closed(_CLOSED_ISSUE_NUMBER)
     try:
-        instance.assert_no_new_release_is_available(0)
+        assert_github_issue.fix_not_released(0)
     except AssertionError:
         pass
 
-    return instance
+    return assert_github_issue
 
 
 class TestCaching:
     @staticmethod
     def test_closed_issue_check_does_not_fail_when_closed(
-        instance_caching: GitHubIssueTestCase
+        assert_github_issue_caching: AssertGitHubIssue
     ):
         with _timer():
-            instance_caching.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
+            assert_github_issue_caching.is_closed(_CLOSED_ISSUE_NUMBER)
 
     @staticmethod
     def test_release_check_fails_when_new_releases_available(
-        instance_caching: GitHubIssueTestCase
+        assert_github_issue_caching: AssertGitHubIssue
     ):
         with _timer():
             with pytest.raises(AssertionError, match=".*New release of .*"):
-                instance_caching.assert_no_new_release_is_available(0)
+                assert_github_issue_caching.fix_not_released(0)
 
 
-def noop(_: GitHubIssueTestCase):
+def noop(_: AssertGitHubIssue):
     pass
 
 
@@ -321,7 +319,7 @@ class TestAuthentication:
         requests_mock: MagicMock,
         username: str,
         token: str,
-        assertion: Callable[[GitHubIssueTestCase], None] = noop,
+        assertion: Callable[[AssertGitHubIssue], None] = noop,
     ):
         with patch.dict(
             "os.environ",
@@ -332,9 +330,9 @@ class TestAuthentication:
             },
         ):
             _set_issue_state(requests_mock, "open")
-            instance = GitHubIssueTestCase(_OWNER, _REPOSITORY)
-            instance.assert_github_issue_is_open(_ISSUE_NUMBER)
-            assertion(instance)
+            assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
+            assert_github_issue.is_open(_ISSUE_NUMBER)
+            assertion(assert_github_issue)
 
     @pytest.mark.parametrize(
         "username,token",
@@ -388,10 +386,10 @@ class TestAuthentication:
         )
 
     def test_it_is_suggested_when_api_rate_exceeded(self, requests_mock: MagicMock):
-        def _assertion(instance: GitHubIssueTestCase):
+        def _assertion(assert_github_issue: AssertGitHubIssue):
             _set_limit_exceeded(requests_mock)
 
             with pytest.raises(HTTPError, match=".*Consider setting.*"):
-                instance.assert_github_issue_is_open(_ISSUE_NUMBER)
+                assert_github_issue.is_open(_ISSUE_NUMBER)
 
         self._init_with_user_name_token_and_assert(requests_mock, "", "", _assertion)

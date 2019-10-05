@@ -16,7 +16,7 @@ class GitHubIssueState(Enum):
     closed = "closed"
 
 
-class GitHubIssueTestCase:
+class AssertGitHubIssue:
     _URL_API: str = "https://api.github.com"
     _URL_WEB: str = "https://github.com"
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
@@ -86,14 +86,12 @@ class GitHubIssueTestCase:
                 f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
             )
 
-    def assert_github_issue_is_state(
+    def is_state(
         self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
     ) -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
-        :raises RuntimeError: When :py:attr:`~GitHubIssueTestCase._OWNER` or
-            :py:attr:`~GitHubIssueTestCase._REPOSITORY` is not overwritten.
         """
         issue_identifier = f"issues/{issue_number}"
 
@@ -119,21 +117,21 @@ class GitHubIssueTestCase:
             f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}."
         )
 
-    def assert_github_issue_is_open(self, issue_number: int, msg: str = "") -> None:
+    def is_open(self, issue_number: int, msg: str = "") -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.assert_github_issue_is_state(issue_number, GitHubIssueState.open, msg)
+        self.is_state(issue_number, GitHubIssueState.open, msg)
 
-    def assert_github_issue_is_closed(self, issue_number: int, msg: str = "") -> None:
+    def is_closed(self, issue_number: int, msg: str = "") -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.assert_github_issue_is_state(issue_number, GitHubIssueState.closed, msg)
+        self.is_state(issue_number, GitHubIssueState.closed, msg)
 
-    def assert_no_new_release_is_available(self, expected_number_of_releases: int) -> None:
+    def fix_not_released(self, expected_number_of_releases: int) -> None:
         """
         Checks number of releases of watched repository. Useful when issue is fixed (closed)
         but not released yet. This assertion will fail when the number of releases does not
