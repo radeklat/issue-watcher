@@ -16,7 +16,7 @@ Types of changes are:
 
 ## Added
 * Compatibility with pytest
-* Credentials supplied through constructor
+* Repository ID supplied through constructor as a single string
 
 ### Changed
 * Tests rewritten from unittest to pytest
@@ -29,7 +29,7 @@ Types of changes are:
 
 ### Removed
 * Sub-classing of `unittest.TestCase`
-* Setting credentials through class attributes
+* Setting repository ID through class attributes
 
 ## [1.2.0] - 2019-08-14
 

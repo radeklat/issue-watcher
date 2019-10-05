@@ -1,37 +1,33 @@
 import warnings
 from contextlib import contextmanager
 from time import perf_counter, time
-from typing import Callable, List, Type
+from typing import Callable, List
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from requests import HTTPError
 
-from issuewatcher import GitHubIssueState, AssertGitHubIssue
+from issuewatcher import AssertGitHubIssue, GitHubIssueState
+
+# False positive caused by pytest fixtures and class use
+# pylint: disable=redefined-outer-name, too-few-public-methods
 
 
-# False positive cause by pytest fixtures
-# pylint: disable=redefined-outer-name
-
-
-_REPOSITORY = "issue-watcher"
-_OWNER = "radeklat"
+_REPOSITORY_ID = "radeklat/issue-watcher"
 
 
 class TestRepositoryAttributeHandling:
     @staticmethod
     @pytest.mark.parametrize(
-        "testing_class,constructor_arguments",
+        "constructor_arguments",
         [
-            pytest.param(AssertGitHubIssue, [_OWNER], id="repository name"),
-            pytest.param(AssertGitHubIssue, [None, _REPOSITORY], id="owner"),
+            pytest.param([""], id="has no slashes"),
+            pytest.param(["//"], id="has too many slashes"),
         ],
     )
-    def test_it_raises_error_when_constructor_argument_is_missing(
-        testing_class: Type[AssertGitHubIssue], constructor_arguments: List
-    ):
+    def test_it_raises_error_when_repository_id(constructor_arguments: List):
         with pytest.raises(ValueError):
-            testing_class(*constructor_arguments)
+            AssertGitHubIssue(*constructor_arguments)
 
 
 _ISSUE_NUMBER = 123
@@ -50,7 +46,7 @@ def requests_mock():
 @pytest.fixture()
 def assert_github_issue_no_cache():
     with patch.dict("os.environ", {"CACHE_INVALIDATION_IN_SECONDS": "0"}):
-        assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
+        assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
 
     return assert_github_issue
 
@@ -267,7 +263,7 @@ def _timer():
 
 @pytest.fixture()
 def assert_github_issue_caching():
-    assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
+    assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
 
     # first call can be cache miss
     assert_github_issue.is_closed(_CLOSED_ISSUE_NUMBER)
@@ -330,7 +326,7 @@ class TestAuthentication:
             },
         ):
             _set_issue_state(requests_mock, "open")
-            assert_github_issue = AssertGitHubIssue(_OWNER, _REPOSITORY)
+            assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
             assert_github_issue.is_open(_ISSUE_NUMBER)
             assertion(assert_github_issue)
 

@@ -22,11 +22,10 @@ class AssertGitHubIssue:
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
     _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
-    def __init__(self, owner: Optional[str] = None, repository: Optional[str] = None):
+    def __init__(self, repository_id: str):
         """
-        :param owner: Repository owner.
-        :param repository: Repository name,.
-        :raises ValueError: When only owner or repository ame supplied.
+        :param repository_id: GitHub repository ID formatted as "owner/repository name".
+        :raises ValueError: When the repository ID is not two slash separated strings.
         """
         self._rate_limit_exceeded_extra_msg: str = ""
         self._auth: Optional[Tuple[str, str]] = (
@@ -51,16 +50,14 @@ class AssertGitHubIssue:
                 f"See https://github.com/radeklat/issue-watcher#environment-variables"
             )
 
-        if all([owner, repository]):
-            self._repo_id = f"{owner}/{repository}"
-        else:
+        self._repository_id = repository_id
+        if len(repository_id.split("/")) != 2:
             raise ValueError(
-                f"Repository name and owner must be both set either via class "
-                f"attributes '_OWNER' and '_REPOSITORY' or via constructor "
-                f"parameters 'owner' and 'repository'."
+                f"repository_id must be two slash separated strings "
+                f"('owner/repository name') but '{repository_id}' given."
             )
 
-        self._cache = TemporaryCache(self._repo_id)
+        self._cache = TemporaryCache(self._repository_id)
 
     def _handle_rate_limit_error(self, response: Response):
         headers = response.headers
@@ -101,7 +98,8 @@ class AssertGitHubIssue:
         except KeyError:
             # Response documented at https://developer.github.com/v3/issues/
             response: Response = requests.get(
-                f"{self._URL_API}/repos/{self._repo_id}/{issue_identifier}", auth=self._auth
+                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}",
+                auth=self._auth,
             )
             self._handle_connection_error(response)
 
@@ -112,9 +110,9 @@ class AssertGitHubIssue:
             msg = f" {msg}"
 
         assert current_state == expected_state.value, (
-            f"GitHub issue #{issue_number} from '{self._repo_id}'"
+            f"GitHub issue #{issue_number} from '{self._repository_id}'"
             f" is no longer {expected_state.value}.{msg} Visit "
-            f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}."
+            f"{self._URL_WEB}/{self._repository_id}/issues/{issue_number}."
         )
 
     def is_open(self, issue_number: int, msg: str = "") -> None:
@@ -140,7 +138,7 @@ class AssertGitHubIssue:
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        releases_url = f"{self._URL_API}/repos/{self._repo_id}/git/refs/tags"
+        releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
 
         try:
             actual_release_count = int(self._cache["release_count"])
@@ -157,12 +155,12 @@ class AssertGitHubIssue:
             f"{expected_number_of_releases} releases but repository reports "
             f"{actual_release_count} available releases at the moment. Set the "
             f"expected number of releases to the current number of releases "
-            f"({actual_release_count}). Visit {self._URL_WEB}/{self._repo_id}/releases "
-            f"to see all releases."
+            f"({actual_release_count}). Visit {self._URL_WEB}/{self._repository_id}/"
+            f"releases to see all releases."
         )
 
         assert actual_release_count <= expected_number_of_releases, (
-            f"New release of '{self._repo_id}' is available. Expected "
+            f"New release of '{self._repository_id}' is available. Expected "
             f"{expected_number_of_releases} releases but {actual_release_count} are now "
-            f"available. Visit {self._URL_WEB}/{self._repo_id}/releases."
+            f"available. Visit {self._URL_WEB}/{self._repository_id}/releases."
         )
