@@ -3,8 +3,6 @@ RUN_TEST_NO_UPDATE:=bash test.sh --noinstall --no-update --novirtualenv --strict
 help: ## Prints this help/overview message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-17s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-include .env
-export
 
 upload-to-test-pypi:
 	python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*

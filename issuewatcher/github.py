@@ -4,7 +4,6 @@ from datetime import timedelta
 from enum import Enum
 from time import time
 from typing import Optional, Tuple
-from unittest import TestCase
 
 import requests
 from requests import HTTPError, Response
@@ -17,7 +16,7 @@ class GitHubIssueState(Enum):
     closed = "closed"
 
 
-class GitHubIssueTestCase(TestCase):
+class GitHubIssueTestCase:
     _URL_API: str = "https://api.github.com"
     _URL_WEB: str = "https://github.com"
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
@@ -26,13 +25,29 @@ class GitHubIssueTestCase(TestCase):
     _OWNER: str = ""
     _REPOSITORY: str = ""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, owner: Optional[str] = None, repository: Optional[str] = None):
+        """
+        All options for the calls can be supplied either via class attributes or
+        via constructor parameters. This is for compatibility reasons:
 
+            * Class can be sub-classed and used as a Mixin with
+                :py:class:`unittest.TestCase` - use class attributes.
+            * Class can use used as instance with pytest - use constructor parameters.
+
+        All options must be supplied by either of the methods. Mixing the methods
+        is not allowed. If both methods are used fully, constructor parameters
+        take precedence.
+
+        :param owner: Repository owner, matches :py:attr:`~GitHubIssueTestCase._OWNER`.
+        :param repository: Repository name, matches
+            :py:attr:`~GitHubIssueTestCase._REPOSITORY`.
+        :raises ValueError: When not all options are supplied or method of supplying
+            them is mixed.
+        """
         self._rate_limit_exceeded_extra_msg: str = ""
-        self._auth: Tuple[Optional[str], Optional[str]] = (
-            os.environ.get(self._ENV_VAR_USERNAME, None),
-            os.environ.get(self._ENV_VAR_TOKEN, None),
+        self._auth: Optional[Tuple[str, str]] = (
+            os.environ.get(self._ENV_VAR_USERNAME, ""),
+            os.environ.get(self._ENV_VAR_TOKEN, ""),
         )
         if not all(self._auth):
             if any(self._auth):
@@ -46,13 +61,23 @@ class GitHubIssueTestCase(TestCase):
                 )
             self._auth = None
             self._rate_limit_exceeded_extra_msg = (
-                f" Consider setting '{self._ENV_VAR_USERNAME}' and "
+                f"Consider setting '{self._ENV_VAR_USERNAME}' and "
                 f"'{self._ENV_VAR_TOKEN}' environment variables to turn on GitHub "
                 f"authentication and raise the API rate limit. "
                 f"See https://github.com/radeklat/issue-watcher#environment-variables"
             )
 
-        self._repo_id = f"{self._OWNER}/{self._REPOSITORY}"
+        if all([owner, repository]):
+            self._repo_id = f"{owner}/{repository}"
+        elif all([self._OWNER, self._REPOSITORY]):
+            self._repo_id = f"{self._OWNER}/{self._REPOSITORY}"
+        else:
+            raise ValueError(
+                f"Repository name and owner must be both set either via class "
+                f"attributes '_OWNER' and '_REPOSITORY' or via constructor "
+                f"parameters 'owner' and 'repository'."
+            )
+
         self._cache = TemporaryCache(self._repo_id)
 
     def _handle_rate_limit_error(self, response: Response):
@@ -79,14 +104,6 @@ class GitHubIssueTestCase(TestCase):
                 f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
             )
 
-    def _check_attributes(self):
-        for attribute in ["_OWNER", "_REPOSITORY"]:
-            if not getattr(self, attribute):
-                raise RuntimeError(
-                    f"Attribute '{attribute}' on class '{self.__class__.__name__}' must "
-                    f"be set."
-                )
-
     def assert_github_issue_is_state(
         self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
     ) -> None:
@@ -96,8 +113,6 @@ class GitHubIssueTestCase(TestCase):
         :raises RuntimeError: When :py:attr:`~GitHubIssueTestCase._OWNER` or
             :py:attr:`~GitHubIssueTestCase._REPOSITORY` is not overwritten.
         """
-        self._check_attributes()
-
         issue_identifier = f"issues/{issue_number}"
 
         try:
@@ -116,12 +131,10 @@ class GitHubIssueTestCase(TestCase):
         if msg:
             msg = f" {msg}"
 
-        self.assertEqual(
-            current_state,
-            expected_state.value,
-            msg=f"GitHub issue #{issue_number} from '{self._repo_id}'"
+        assert current_state == expected_state.value, (
+            f"GitHub issue #{issue_number} from '{self._repo_id}'"
             f" is no longer {expected_state.value}.{msg} Visit "
-            f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}.",
+            f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}."
         )
 
     def assert_github_issue_is_open(self, issue_number: int, msg: str = "") -> None:
@@ -147,8 +160,6 @@ class GitHubIssueTestCase(TestCase):
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self._check_attributes()
-
         releases_url = f"{self._URL_API}/repos/{self._repo_id}/git/refs/tags"
 
         try:
@@ -161,19 +172,17 @@ class GitHubIssueTestCase(TestCase):
             actual_release_count = len(response.json())
             self._cache["release_count"] = str(actual_release_count)
 
-        self.assertFalse(
-            expected_number_of_releases > actual_release_count,
+        assert expected_number_of_releases <= actual_release_count, (
             f"This test case seems improperly configured. Expected "
             f"{expected_number_of_releases} releases but repository reports "
             f"{actual_release_count} available releases at the moment. Set the "
             f"expected number of releases to the current number of releases "
             f"({actual_release_count}). Visit {self._URL_WEB}/{self._repo_id}/releases "
-            f"to see all releases.",
+            f"to see all releases."
         )
 
-        self.assertTrue(
-            actual_release_count <= expected_number_of_releases,
+        assert actual_release_count <= expected_number_of_releases, (
             f"New release of '{self._repo_id}' is available. Expected "
             f"{expected_number_of_releases} releases but {actual_release_count} are now "
-            f"available. Visit {self._URL_WEB}/{self._repo_id}/releases.",
+            f"available. Visit {self._URL_WEB}/{self._repo_id}/releases."
         )
