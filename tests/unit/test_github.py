@@ -1,7 +1,7 @@
 import warnings
 from contextlib import contextmanager
 from time import perf_counter, time
-from typing import Callable, List
+from typing import Callable, List, Optional
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
@@ -174,6 +174,18 @@ class TestReleaseNumberCheck:
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
         with pytest.raises(AssertionError, match=".*improperly configured.*"):
             assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
+
+    @staticmethod
+    def test_it_shows_current_release_number_if_none_given(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, 1)
+        with pytest.raises(
+            AssertionError,
+            match=".*test does not have any number of releases set.*"
+            "number of releases is '[0-9]+'",
+        ) as ex:
+            assert_github_issue_no_cache.current_release()
 
 
 class TestHttpErrorRaising:

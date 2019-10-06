@@ -84,7 +84,16 @@ The updated test case will now fail if issue gets re-opened.
 To watch for the fix to be released, you can add a release watch test. Assuming that there are 25 releases at the moment of writing the test:
 
     def test_safety_fix_has_not_been_released(self):
-        AssertGitHubIssue("pyupio/safety").fix_not_released(25)
+        AssertGitHubIssue("pyupio/safety").current_release(25)
+        
+If you're not sure how many releases there are at the moment, you can leave the release number empty:
+
+    def test_safety_fix_has_not_been_released(self):
+        AssertGitHubIssue("pyupio/safety").current_release()
+        
+and the test will report it in the failing test:
+
+    This test does not have any number of releases set. Current number of releases is '25'.
         
 ## Fix is released
         
