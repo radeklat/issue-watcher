@@ -1,7 +1,7 @@
 import warnings
 from contextlib import contextmanager
 from time import perf_counter, time
-from typing import Callable, List, Optional
+from typing import Callable, List
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
@@ -184,7 +184,7 @@ class TestReleaseNumberCheck:
             AssertionError,
             match=".*test does not have any number of releases set.*"
             "number of releases is '[0-9]+'",
-        ) as ex:
+        ):
             assert_github_issue_no_cache.current_release()
 
 
