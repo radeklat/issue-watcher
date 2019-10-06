@@ -158,14 +158,14 @@ class TestReleaseNumberCheck:
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES + 1)
         with pytest.raises(AssertionError, match="New release of .*"):
-            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_does_not_fail_when_expected_releases_available(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES)
-        assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
+        assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_checks_if_release_number_is_properly_configured(
@@ -173,7 +173,7 @@ class TestReleaseNumberCheck:
     ):
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
         with pytest.raises(AssertionError, match=".*improperly configured.*"):
-            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
 
 class TestHttpErrorRaising:
@@ -193,7 +193,7 @@ class TestHttpErrorRaising:
         _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES, 500)
 
         with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
-            assert_github_issue_no_cache.fix_not_released(_CURRENT_NUMBER_OF_RELEASES)
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_raises_with_info_about_rate_limit_when_exceeded(
@@ -247,7 +247,7 @@ class TestChecksLive:
         assert_github_issue_no_cache: AssertGitHubIssue
     ):
         with pytest.raises(AssertionError, match=".*New release of .*") as ex:
-            assert_github_issue_no_cache.fix_not_released(0)
+            assert_github_issue_no_cache.current_release(0)
 
         print(ex)  # for quick grab of string for documentation
 
@@ -268,7 +268,7 @@ def assert_github_issue_caching():
     # first call can be cache miss
     assert_github_issue.is_closed(_CLOSED_ISSUE_NUMBER)
     try:
-        assert_github_issue.fix_not_released(0)
+        assert_github_issue.current_release(0)
     except AssertionError:
         pass
 
@@ -289,7 +289,7 @@ class TestCaching:
     ):
         with _timer():
             with pytest.raises(AssertionError, match=".*New release of .*"):
-                assert_github_issue_caching.fix_not_released(0)
+                assert_github_issue_caching.current_release(0)
 
 
 def noop(_: AssertGitHubIssue):

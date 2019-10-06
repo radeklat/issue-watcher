@@ -25,7 +25,8 @@ Types of changes are:
     * `assert_github_issue_is_state` -> `is_state`
     * `assert_github_issue_is_open` -> `is_open`
     * `assert_github_issue_is_closed` -> `is_closed`
-    * `assert_no_new_release_is_available` -> `fix_not_released`
+    * `assert_no_new_release_is_available` -> `current_release`
+* Method parameter `issue_number` renamed to `issue_id` in `is_state()`, `is_open()` and `is_closed()`.
 
 ### Removed
 * Sub-classing of `unittest.TestCase`
