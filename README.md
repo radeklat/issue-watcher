@@ -1,7 +1,7 @@
 # issue-watcher
 Sometimes it happens that you discover a bug in a library that you are using and have to create a workaround (technical debt). However, it would be good to also remove the workaround once a bugfix is released.
 
-This library provides Python `unittest` test cases that are watching when an issue is closed and failing a test to let you know fixed functionality is available. A good way to automatically manage and reduce known technical debt.
+This library provides several useful assertions that are watching when an issue is closed and failing a test to let you know fixed functionality is available. A good way to automatically manage and reduce known technical debt.
 
 [![Build Status](https://travis-ci.org/radeklat/issue-watcher.svg?branch=master)](https://travis-ci.org/radeklat/issue-watcher)
 [![codecov](https://codecov.io/gh/radeklat/issue-watcher/branch/master/graph/badge.svg)](https://codecov.io/gh/radeklat/issue-watcher)
@@ -37,16 +37,24 @@ Following examples will show typical steps you would take and automation availab
 
 You would like to be notified once the issue is resolved (closed) and enable the currently disabled behaviour. To get notified in relevant place, create the following test case:
 
-    from issuewatcher import GitHubIssueTestCase
+    from unittest import TestCase
     
-    class BugsInSafetyAreFixedTestCase(GitHubIssueTestCase):
-        _OWNER = "pyupio"
-        _REPOSITORY = "safety"
-
+    from issuewatcher import AssertGitHubIssue
+    
+    class BugsInSafetyAreFixedTestCase(TestCase):
         def test_safety_cannot_be_enable_on_windows(self):
-            self.assert_github_issue_is_open(
+            AssertGitHubIssue("pyupio/safety").is_open(
                 119, "Check if safety can be enabled on Windows."
             )
+            
+Alternatively, with pytest:
+
+    from issuewatcher import AssertGitHubIssue
+    
+    def test_safety_cannot_be_enable_on_windows(self):
+        AssertGitHubIssue("pyupio/safety").is_open(
+            119, "Check if safety can be enabled on Windows."
+        )
         
 Once the issue is closed on GitHub, the test will fail with the following error message:
 
@@ -58,15 +66,15 @@ Once the issue is closed on GitHub, the test will fail with the following error 
 You can update the test case to watch if issue is not re-opened. Change the test case from:
 
     def test_safety_cannot_be_enable_on_windows(self):
-        self.assert_github_issue_is_open(
+        AssertGitHubIssue("pyupio/safety").is_open(
             119, "Check if safety can be enabled on Windows."
         )
         
 to
 
     def test_safety_can_be_enable_on_windows(self):
-        self.assert_github_issue_is_closed(
-            119, "Check if safety can be enabled on Windows."
+        AssertGitHubIssue("pyupio/safety").is_closed(
+            119, "Check if safety should be disabled on Windows."
         )
 
 The updated test case will now fail if issue gets re-opened.
@@ -76,7 +84,7 @@ The updated test case will now fail if issue gets re-opened.
 To watch for the fix to be released, you can add a release watch test. Assuming that there are 25 releases at the moment of writing the test:
 
     def test_safety_fix_has_not_been_released(self):
-        self.assert_no_new_release_is_available(25)
+        AssertGitHubIssue("pyupio/safety").fix_not_released(25)
         
 ## Fix is released
         

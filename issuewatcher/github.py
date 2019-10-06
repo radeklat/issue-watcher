@@ -4,7 +4,6 @@ from datetime import timedelta
 from enum import Enum
 from time import time
 from typing import Optional, Tuple
-from unittest import TestCase
 
 import requests
 from requests import HTTPError, Response
@@ -17,22 +16,21 @@ class GitHubIssueState(Enum):
     closed = "closed"
 
 
-class GitHubIssueTestCase(TestCase):
+class AssertGitHubIssue:
     _URL_API: str = "https://api.github.com"
     _URL_WEB: str = "https://github.com"
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
     _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
-    _OWNER: str = ""
-    _REPOSITORY: str = ""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def __init__(self, repository_id: str):
+        """
+        :param repository_id: GitHub repository ID formatted as "owner/repository name".
+        :raises ValueError: When the repository ID is not two slash separated strings.
+        """
         self._rate_limit_exceeded_extra_msg: str = ""
-        self._auth: Tuple[Optional[str], Optional[str]] = (
-            os.environ.get(self._ENV_VAR_USERNAME, None),
-            os.environ.get(self._ENV_VAR_TOKEN, None),
+        self._auth: Optional[Tuple[str, str]] = (
+            os.environ.get(self._ENV_VAR_USERNAME, ""),
+            os.environ.get(self._ENV_VAR_TOKEN, ""),
         )
         if not all(self._auth):
             if any(self._auth):
@@ -46,14 +44,20 @@ class GitHubIssueTestCase(TestCase):
                 )
             self._auth = None
             self._rate_limit_exceeded_extra_msg = (
-                f" Consider setting '{self._ENV_VAR_USERNAME}' and "
+                f"Consider setting '{self._ENV_VAR_USERNAME}' and "
                 f"'{self._ENV_VAR_TOKEN}' environment variables to turn on GitHub "
                 f"authentication and raise the API rate limit. "
                 f"See https://github.com/radeklat/issue-watcher#environment-variables"
             )
 
-        self._repo_id = f"{self._OWNER}/{self._REPOSITORY}"
-        self._cache = TemporaryCache(self._repo_id)
+        self._repository_id = repository_id
+        if len(repository_id.split("/")) != 2:
+            raise ValueError(
+                f"repository_id must be two slash separated strings "
+                f"('owner/repository name') but '{repository_id}' given."
+            )
+
+        self._cache = TemporaryCache(self._repository_id)
 
     def _handle_rate_limit_error(self, response: Response):
         headers = response.headers
@@ -79,26 +83,14 @@ class GitHubIssueTestCase(TestCase):
                 f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
             )
 
-    def _check_attributes(self):
-        for attribute in ["_OWNER", "_REPOSITORY"]:
-            if not getattr(self, attribute):
-                raise RuntimeError(
-                    f"Attribute '{attribute}' on class '{self.__class__.__name__}' must "
-                    f"be set."
-                )
-
-    def assert_github_issue_is_state(
-        self, issue_number: int, expected_state: GitHubIssueState, msg: str = ""
+    def is_state(
+        self, issue_id: int, expected_state: GitHubIssueState, msg: str = ""
     ) -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
-        :raises RuntimeError: When :py:attr:`~GitHubIssueTestCase._OWNER` or
-            :py:attr:`~GitHubIssueTestCase._REPOSITORY` is not overwritten.
         """
-        self._check_attributes()
-
-        issue_identifier = f"issues/{issue_number}"
+        issue_identifier = f"issues/{issue_id}"
 
         try:
             current_state = self._cache[issue_identifier]
@@ -106,7 +98,8 @@ class GitHubIssueTestCase(TestCase):
         except KeyError:
             # Response documented at https://developer.github.com/v3/issues/
             response: Response = requests.get(
-                f"{self._URL_API}/repos/{self._repo_id}/{issue_identifier}", auth=self._auth
+                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}",
+                auth=self._auth,
             )
             self._handle_connection_error(response)
 
@@ -116,29 +109,27 @@ class GitHubIssueTestCase(TestCase):
         if msg:
             msg = f" {msg}"
 
-        self.assertEqual(
-            current_state,
-            expected_state.value,
-            msg=f"GitHub issue #{issue_number} from '{self._repo_id}'"
+        assert current_state == expected_state.value, (
+            f"GitHub issue #{issue_id} from '{self._repository_id}'"
             f" is no longer {expected_state.value}.{msg} Visit "
-            f"{self._URL_WEB}/{self._repo_id}/issues/{issue_number}.",
+            f"{self._URL_WEB}/{self._repository_id}/issues/{issue_id}."
         )
 
-    def assert_github_issue_is_open(self, issue_number: int, msg: str = "") -> None:
+    def is_open(self, issue_id: int, msg: str = "") -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.assert_github_issue_is_state(issue_number, GitHubIssueState.open, msg)
+        self.is_state(issue_id, GitHubIssueState.open, msg)
 
-    def assert_github_issue_is_closed(self, issue_number: int, msg: str = "") -> None:
+    def is_closed(self, issue_id: int, msg: str = "") -> None:
         """
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.assert_github_issue_is_state(issue_number, GitHubIssueState.closed, msg)
+        self.is_state(issue_id, GitHubIssueState.closed, msg)
 
-    def assert_no_new_release_is_available(self, expected_number_of_releases: int) -> None:
+    def current_release(self, current_release_number: int) -> None:
         """
         Checks number of releases of watched repository. Useful when issue is fixed (closed)
         but not released yet. This assertion will fail when the number of releases does not
@@ -147,9 +138,7 @@ class GitHubIssueTestCase(TestCase):
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self._check_attributes()
-
-        releases_url = f"{self._URL_API}/repos/{self._repo_id}/git/refs/tags"
+        releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
 
         try:
             actual_release_count = int(self._cache["release_count"])
@@ -161,19 +150,16 @@ class GitHubIssueTestCase(TestCase):
             actual_release_count = len(response.json())
             self._cache["release_count"] = str(actual_release_count)
 
-        self.assertFalse(
-            expected_number_of_releases > actual_release_count,
-            f"This test case seems improperly configured. Expected "
-            f"{expected_number_of_releases} releases but repository reports "
-            f"{actual_release_count} available releases at the moment. Set the "
-            f"expected number of releases to the current number of releases "
-            f"({actual_release_count}). Visit {self._URL_WEB}/{self._repo_id}/releases "
-            f"to see all releases.",
+        assert current_release_number <= actual_release_count, (
+            f"This test seems improperly configured. Expected '{current_release_number}' "
+            f"releases but repository reports '{actual_release_count}' available "
+            f"releases at the moment. Set the current_release_number to the "
+            f"current number of releases ({actual_release_count}). Visit "
+            f"{self._URL_WEB}/{self._repository_id}/releases to see all releases."
         )
 
-        self.assertTrue(
-            actual_release_count <= expected_number_of_releases,
-            f"New release of '{self._repo_id}' is available. Expected "
-            f"{expected_number_of_releases} releases but {actual_release_count} are now "
-            f"available. Visit {self._URL_WEB}/{self._repo_id}/releases.",
+        assert actual_release_count <= current_release_number, (
+            f"New release of '{self._repository_id}' is available. Expected "
+            f"{current_release_number} releases but {actual_release_count} are now "
+            f"available. Visit {self._URL_WEB}/{self._repository_id}/releases."
         )

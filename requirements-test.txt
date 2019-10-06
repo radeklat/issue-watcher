@@ -6,4 +6,3 @@ pytest
 pytest-cov
 black
 pre-commit
-parameterized

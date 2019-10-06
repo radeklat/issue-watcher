@@ -1,232 +1,253 @@
 import warnings
 from contextlib import contextmanager
-from time import time, perf_counter
+from time import perf_counter, time
+from typing import Callable, List
 from unittest.mock import ANY, MagicMock, patch
 
-from parameterized import parameterized
+import pytest
 from requests import HTTPError
 
-from issuewatcher import GitHubIssueState, GitHubIssueTestCase
-from temporary_cache import TemporaryCache
-from tests.helpers.parameterized import get_test_case_name_without_index
+from issuewatcher import AssertGitHubIssue, GitHubIssueState
+
+# False positive caused by pytest fixtures and class use
+# pylint: disable=redefined-outer-name, too-few-public-methods
 
 
-class EmptyOwnerAndRepository(GitHubIssueTestCase):
-    def setUp(self):
-        super().setUp()
-        requests_patcher = patch("issuewatcher.github.requests")
-        self._requests_mock = requests_patcher.start()
-        self.addCleanup(requests_patcher.stop)
-        self._cache._expire_in_seconds = 0
-
-    def _set_issue_state(self, value: str, status_code: int = 200):
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"state": value}
-        mock_response.status_code = status_code
-        self._requests_mock.get.return_value = mock_response
-
-    def _set_number_or_releases_to(self, count: int, status_code: int = 200):
-        mock_response = MagicMock()
-        mock_response.json.return_value = [{}] * count
-        mock_response.status_code = status_code
-        self._requests_mock.get.return_value = mock_response
-
-    def _set_limit_exceeded(self):
-        mock_message = "Message from GitHub"
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"message": mock_message}
-        mock_response.status_code = 403
-        mock_response.headers = {
-            "X-RateLimit-Remaining": 0,
-            "X-RateLimit-Limit": 60,
-            "X-RateLimit-Reset": time() + 3600,
-        }
-        self._requests_mock.get.return_value = mock_response
-
-    def _fail_open_state_check(self, msg: str = ""):
-        self._set_issue_state(GitHubIssueState.closed.value)
-        self.assert_github_issue_is_open(_ISSUE_NUMBER, msg)
+_REPOSITORY_ID = "radeklat/issue-watcher"
 
 
-class RepositoryNameCheck(EmptyOwnerAndRepository):
-    _REPOSITORY = "issue-watcher"
-
-    def test_it_checks_it_is_set(self):
-        with self.assertRaises(RuntimeError):
-            self._fail_open_state_check()
-
-
-class RepositoryOwnerCheck(EmptyOwnerAndRepository):
-    _OWNER = "radeklat"
-
-    def test_it_checks_it_is_set(self):
-        with self.assertRaises(RuntimeError):
-            self._fail_open_state_check()
-
-
-class OwnerAndRepoSet(GitHubIssueTestCase):
-    _OWNER = "radeklat"
-    _REPOSITORY = "issue-watcher"
-
-    def setUp(self):
-        super().setUp()
-        self._cache._expire_in_seconds = 0
-
-
-class MockedOwnerAndRepoSet(OwnerAndRepoSet, EmptyOwnerAndRepository):
-    def setUp(self):
-        EmptyOwnerAndRepository.setUp(self)
-        OwnerAndRepoSet.setUp(self)
+class TestRepositoryAttributeHandling:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "constructor_arguments",
+        [
+            pytest.param([""], id="has no slashes"),
+            pytest.param(["//"], id="has too many slashes"),
+        ],
+    )
+    def test_it_raises_error_when_repository_id(constructor_arguments: List):
+        with pytest.raises(ValueError):
+            AssertGitHubIssue(*constructor_arguments)
 
 
 _ISSUE_NUMBER = 123
 
 
-class StateCheck(MockedOwnerAndRepoSet):
-    @parameterized.expand(
+@pytest.fixture()
+def requests_mock():
+    requests_patcher = patch("issuewatcher.github.requests")
+
+    try:
+        yield requests_patcher.start()
+    finally:
+        requests_patcher.stop()
+
+
+@pytest.fixture()
+def assert_github_issue_no_cache():
+    with patch.dict("os.environ", {"CACHE_INVALIDATION_IN_SECONDS": "0"}):
+        assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
+
+    return assert_github_issue
+
+
+def _set_issue_state(req_mock: MagicMock, value: str, status_code: int = 200):
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"state": value}
+    mock_response.status_code = status_code
+    req_mock.get.return_value = mock_response
+
+
+class TestStateCheck:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "expected_state,returned_state",
         [
-            ("open closed", GitHubIssueState.open, "closed"),
-            ("closed open", GitHubIssueState.closed, "open"),
+            pytest.param(GitHubIssueState.open, "closed", id="open closed"),
+            pytest.param(GitHubIssueState.closed, "open", id="closed open"),
         ],
-        name_func=get_test_case_name_without_index,
     )
-    def test_it_fails_on_non_matching_state(self, _, expected_state, returned_state):
-        self._set_issue_state(returned_state)
+    def test_it_fails_on_non_matching_state(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+        expected_state: GitHubIssueState,
+        returned_state: str,
+    ):
+        _set_issue_state(requests_mock, returned_state)
 
-        with self.assertRaises(AssertionError):
-            self.assert_github_issue_is_state(_ISSUE_NUMBER, expected_state)
+        with pytest.raises(AssertionError):
+            assert_github_issue_no_cache.is_state(_ISSUE_NUMBER, expected_state)
 
-    @parameterized.expand(
-        [("open", GitHubIssueState.open), ("closed", GitHubIssueState.closed)],
-        name_func=get_test_case_name_without_index,
-    )
-    def test_it_does_not_fail_on_matching_state(self, returned_state, expected_state):
-        self._set_issue_state(returned_state)
-        self.assert_github_issue_is_state(_ISSUE_NUMBER, expected_state)
-
-
-class FailingStateCheck(MockedOwnerAndRepoSet):
-    @parameterized.expand(
+    @staticmethod
+    @pytest.mark.parametrize(
+        "expected_state,returned_state",
         [
-            (
-                "link to issue",
+            pytest.param(GitHubIssueState.open, "open", id="open"),
+            pytest.param(GitHubIssueState.closed, "closed", id="closed"),
+        ],
+    )
+    def test_it_does_not_fail_on_matching_state(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+        expected_state: GitHubIssueState,
+        returned_state: str,
+    ):
+        _set_issue_state(requests_mock, returned_state)
+        assert_github_issue_no_cache.is_state(_ISSUE_NUMBER, expected_state)
+
+
+def _fail_open_state_check(
+    assert_github_issue: AssertGitHubIssue, req_mock: MagicMock, msg: str = ""
+):
+    _set_issue_state(req_mock, GitHubIssueState.closed.value)
+    assert_github_issue.is_open(_ISSUE_NUMBER, msg)
+
+
+class TestFailingStateCheck:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "regexp",
+        [
+            pytest.param(
                 f"https://github.com/radeklat/issue-watcher/issues/{_ISSUE_NUMBER}",
+                id="link to issue",
             ),
-            ("owner and repository", "'radeklat/issue-watcher'"),
-            ("expected issue state", "no longer open\\."),
-            ("issue number", f"#{_ISSUE_NUMBER}"),
+            pytest.param("'radeklat/issue-watcher'", id="owner and repository"),
+            pytest.param("no longer open\\.", id="expected issue state"),
+            pytest.param(f"#{_ISSUE_NUMBER}", id="issue number"),
         ],
-        name_func=get_test_case_name_without_index,
     )
-    def test_it_contains(self, _name, regexp):
-        with self.assertRaisesRegex(AssertionError, f".*{regexp}.*"):
-            self._fail_open_state_check()
+    def test_it_contains(
+        regexp: str,
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+    ):
+        with pytest.raises(AssertionError, match=f".*{regexp}.*"):
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 
-    def test_it_contains_custom_message_if_one_provided(self):
+    @staticmethod
+    def test_it_contains_custom_message_if_one_provided(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
         msg = "Sample custom message"
-        with self.assertRaisesRegex(AssertionError, f".*open\\. {msg} Visit.*"):
-            self._fail_open_state_check(msg=msg)
+        with pytest.raises(AssertionError, match=f".*open\\. {msg} Visit.*"):
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock, msg=msg)
 
-    def test_it_does_not_contains_custom_message_if_none_provided(self):
-        with self.assertRaisesRegex(AssertionError, f".*open\\. Visit.*"):
-            self._fail_open_state_check()
-
-
-class OpenIssueCheck(MockedOwnerAndRepoSet):
-    def test_it_fails_when_closed(self):
-        self._set_issue_state("closed")
-
-        with self.assertRaises(AssertionError):
-            self.assert_github_issue_is_open(_ISSUE_NUMBER)
-
-    def test_it_does_not_fail_when_open(self):
-        self._set_issue_state("open")
-        self.assert_github_issue_is_open(_ISSUE_NUMBER)
-
-
-class ClosedIssueCheck(MockedOwnerAndRepoSet):
-    def test_it_fails_when_open(self):
-        self._set_issue_state("open")
-
-        with self.assertRaises(AssertionError):
-            self.assert_github_issue_is_closed(_ISSUE_NUMBER)
-
-    def test_it_does_not_fail_when_closed(self):
-        self._set_issue_state("closed")
-        self.assert_github_issue_is_closed(_ISSUE_NUMBER)
+    @staticmethod
+    def test_it_does_not_contains_custom_message_if_none_provided(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        with pytest.raises(AssertionError, match=f".*open\\. Visit.*"):
+            _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 
 
 _CURRENT_NUMBER_OF_RELEASES = 3
 
 
-class ReleaseNumberCheck(MockedOwnerAndRepoSet):
-    def test_it_fails_when_new_releases_available(self):
-        self._set_number_or_releases_to(_CURRENT_NUMBER_OF_RELEASES + 1)
-        with self.assertRaisesRegex(AssertionError, "New release of .*"):
-            self.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
-
-    def test_it_does_not_fail_when_expected_releases_available(self):
-        self._set_number_or_releases_to(_CURRENT_NUMBER_OF_RELEASES)
-        self.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
-
-    def test_it_checks_if_release_number_is_properly_configured(self):
-        self._set_number_or_releases_to(_CURRENT_NUMBER_OF_RELEASES - 1)
-        with self.assertRaisesRegex(AssertionError, ".*improperly configured.*"):
-            self.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
+def _set_number_or_releases_to(req_mock: MagicMock, count: int, status_code: int = 200):
+    mock_response = MagicMock()
+    mock_response.json.return_value = [{}] * count
+    mock_response.status_code = status_code
+    req_mock.get.return_value = mock_response
 
 
-class HttpErrorRaising(MockedOwnerAndRepoSet):
+class TestReleaseNumberCheck:
+    @staticmethod
+    def test_it_fails_when_new_releases_available(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES + 1)
+        with pytest.raises(AssertionError, match="New release of .*"):
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
+
+    @staticmethod
+    def test_it_does_not_fail_when_expected_releases_available(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES)
+        assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
+
+    @staticmethod
+    def test_it_checks_if_release_number_is_properly_configured(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
+        with pytest.raises(AssertionError, match=".*improperly configured.*"):
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
+
+
+class TestHttpErrorRaising:
     _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"
 
-    def test_it_raises_when_status_not_200_in_state_check(self):
-        self._set_issue_state("open", 500)
+    def test_it_raises_when_status_not_200_in_state_check(
+        self, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_issue_state(requests_mock, "open", 500)
 
-        with self.assertRaisesRegex(HTTPError, self._GENERIC_ERROR_MESSAGE_PATTERN):
-            self.assert_github_issue_is_open(_ISSUE_NUMBER)
+        with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
+            assert_github_issue_no_cache.is_open(_ISSUE_NUMBER)
 
-    def test_it_raises_when_status_not_200_in_releases_check(self):
-        self._set_number_or_releases_to(_CURRENT_NUMBER_OF_RELEASES, 500)
+    def test_it_raises_when_status_not_200_in_releases_check(
+        self, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES, 500)
 
-        with self.assertRaisesRegex(HTTPError, self._GENERIC_ERROR_MESSAGE_PATTERN):
-            self.assert_no_new_release_is_available(_CURRENT_NUMBER_OF_RELEASES)
+        with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
+            assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
-    def test_it_raises_with_info_about_rate_limit_when_exceeded(self):
-        self._set_limit_exceeded()
+    @staticmethod
+    def test_it_raises_with_info_about_rate_limit_when_exceeded(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_limit_exceeded(requests_mock)
 
-        with self.assertRaisesRegex(HTTPError, ".*Current quota:.*"):
-            self.assert_github_issue_is_open(_ISSUE_NUMBER)
+        with pytest.raises(HTTPError, match=".*Current quota:.*"):
+            assert_github_issue_no_cache.is_open(_ISSUE_NUMBER)
 
 
 _OPEN_ISSUE_NUMBER = 1
 _CLOSED_ISSUE_NUMBER = 2
 
 
-class LiveOpenIssueCheck(OwnerAndRepoSet):
-    def test_it_fails_when_closed(self):
-        with self.assertRaises(AssertionError):
+class TestChecksLive:
+    @staticmethod
+    def test_open_issue_check_fails_when_closed(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        with pytest.raises(AssertionError):
             try:
-                self.assert_github_issue_is_open(_CLOSED_ISSUE_NUMBER, "Custom message.")
+                assert_github_issue_no_cache.is_open(
+                    _CLOSED_ISSUE_NUMBER, "Custom message."
+                )
             except AssertionError as ex:
                 print(ex)
                 raise ex
 
-    def test_open_issue_check_does_not_fail_when_open(self):
-        self.assert_github_issue_is_open(_OPEN_ISSUE_NUMBER)
+    @staticmethod
+    def test_open_issue_check_does_not_fail_when_open(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        assert_github_issue_no_cache.is_open(_OPEN_ISSUE_NUMBER)
 
+    @staticmethod
+    def test_closed_issue_check_fails_when_open(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        with pytest.raises(AssertionError):
+            assert_github_issue_no_cache.is_closed(_OPEN_ISSUE_NUMBER)
 
-class LiveClosedIssueCheck(OwnerAndRepoSet):
-    def test_closed_issue_check_fails_when_open(self):
-        with self.assertRaises(AssertionError):
-            self.assert_github_issue_is_closed(_OPEN_ISSUE_NUMBER)
+    @staticmethod
+    def test_closed_issue_check_does_not_fail_when_closed(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        assert_github_issue_no_cache.is_closed(_CLOSED_ISSUE_NUMBER)
 
-    def test_closed_issue_check_does_not_fail_when_closed(self):
-        self.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
-
-
-class LiveReleaseNumberCheck(OwnerAndRepoSet):
-    def test_it_fails_when_new_releases_available(self):
-        with self.assertRaisesRegex(AssertionError, ".*New release of .*") as ex:
-            self.assert_no_new_release_is_available(0)
+    @staticmethod
+    def test_release_number_check_fails_when_new_releases_available(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        with pytest.raises(AssertionError, match=".*New release of .*") as ex:
+            assert_github_issue_no_cache.current_release(0)
 
         print(ex)  # for quick grab of string for documentation
 
@@ -240,100 +261,131 @@ def _timer():
         print(f"Executed in {(perf_counter() - start) * 1000000:.3f}us")
 
 
-class CachedTest(OwnerAndRepoSet):
-    def setUp(self):
-        super().setUp()
-        self._cache._expire_in_seconds = TemporaryCache._DEFAULT_EXPIRY
+@pytest.fixture()
+def assert_github_issue_caching():
+    assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
 
-        # first call can be cache miss
-        self.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
-        try:
-            self.assert_no_new_release_is_available(0)
-        except AssertionError:
-            pass
+    # first call can be cache miss
+    assert_github_issue.is_closed(_CLOSED_ISSUE_NUMBER)
+    try:
+        assert_github_issue.current_release(0)
+    except AssertionError:
+        pass
 
-    def test_closed_issue_check_does_not_fail_when_closed(self):
+    return assert_github_issue
+
+
+class TestCaching:
+    @staticmethod
+    def test_closed_issue_check_does_not_fail_when_closed(
+        assert_github_issue_caching: AssertGitHubIssue
+    ):
         with _timer():
-            self.assert_github_issue_is_closed(_CLOSED_ISSUE_NUMBER)
+            assert_github_issue_caching.is_closed(_CLOSED_ISSUE_NUMBER)
 
-    def test_release_check_fails_when_new_releases_available(self):
+    @staticmethod
+    def test_release_check_fails_when_new_releases_available(
+        assert_github_issue_caching: AssertGitHubIssue
+    ):
         with _timer():
-            with self.assertRaisesRegex(AssertionError, ".*New release of .*"):
-                self.assert_no_new_release_is_available(0)
+            with pytest.raises(AssertionError, match=".*New release of .*"):
+                assert_github_issue_caching.current_release(0)
 
 
-def noop(_self: MockedOwnerAndRepoSet):
+def noop(_: AssertGitHubIssue):
     pass
 
 
-class Authentication(MockedOwnerAndRepoSet):
-    def _init_with_user_name_token_and_assert(self, username, token, assertion=noop):
-        mock_environ = {"GITHUB_USER_NAME": username, "GITHUB_PERSONAL_ACCESS_TOKEN": token}
-        with patch.dict("os.environ", mock_environ):
+def _set_limit_exceeded(req_mock: MagicMock):
+    mock_message = "Message from GitHub"
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"message": mock_message}
+    mock_response.status_code = 403
+    mock_response.headers = {
+        "X-RateLimit-Remaining": 0,
+        "X-RateLimit-Limit": 60,
+        "X-RateLimit-Reset": time() + 3600,
+    }
+    req_mock.get.return_value = mock_response
 
-            class InitMock(MockedOwnerAndRepoSet):
-                def run_test(self):
-                    self._set_issue_state("open")
 
-                    try:
-                        self.assert_github_issue_is_open(_ISSUE_NUMBER)
-                    except AssertionError:
-                        pass
+class TestAuthentication:
+    @staticmethod
+    def _init_with_user_name_token_and_assert(
+        requests_mock: MagicMock,
+        username: str,
+        token: str,
+        assertion: Callable[[AssertGitHubIssue], None] = noop,
+    ):
+        with patch.dict(
+            "os.environ",
+            {
+                "GITHUB_USER_NAME": username,
+                "GITHUB_PERSONAL_ACCESS_TOKEN": token,
+                "CACHE_INVALIDATION_IN_SECONDS": "0",
+            },
+        ):
+            _set_issue_state(requests_mock, "open")
+            assert_github_issue = AssertGitHubIssue(_REPOSITORY_ID)
+            assert_github_issue.is_open(_ISSUE_NUMBER)
+            assertion(assert_github_issue)
 
-                    assertion(self)
-
-            init_mock = InitMock()
-            init_mock.setUp()
-            init_mock.run_test()
-            init_mock.doCleanups()
-
-    @parameterized.expand(
+    @pytest.mark.parametrize(
+        "username,token",
         [
-            ("no user or token supplied", "", ""),
-            ("no user supplied", "", "sometoken"),
-            ("no token supplied", "some user", ""),
+            pytest.param("", "", id="no user or token supplied"),
+            pytest.param("", "sometoken", id="no user supplied"),
+            pytest.param("some user", "", id="no token supplied"),
         ],
-        name_func=get_test_case_name_without_index,
     )
-    def test_it_is_not_used_when_no(self, _name, username, token):
-        def _assertion(outer_self: MockedOwnerAndRepoSet):
-            outer_self._requests_mock.get.assert_called_with(ANY, auth=None)
-
+    def test_it_is_not_used_when(self, requests_mock: MagicMock, username: str, token: str):
         try:
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            self._init_with_user_name_token_and_assert(username, token, _assertion)
+            self._init_with_user_name_token_and_assert(
+                requests_mock,
+                username,
+                token,
+                lambda _: requests_mock.get.assert_called_with(ANY, auth=None),
+            )
         finally:
             warnings.resetwarnings()
 
-    def test_it_displays_warning_when_partial_credentials_supplied(self):
-        with self.assertWarnsRegex(RuntimeWarning, ".*improperly configured.*"):
-            self._init_with_user_name_token_and_assert("some username no token", "")
+    def test_it_displays_warning_when_partial_credentials_supplied(
+        self, requests_mock: MagicMock
+    ):
+        with pytest.warns(RuntimeWarning, match=".*improperly configured.*"):
+            self._init_with_user_name_token_and_assert(
+                requests_mock, "some username no token", ""
+            )
 
-    @parameterized.expand(
+    @pytest.mark.parametrize(
+        "username,token",
         [
-            ("no user or token supplied", "", ""),
-            ("both user and token supplier", "some user", "some token"),
+            pytest.param("", "", id="no user or token supplied"),
+            pytest.param("some user", "some token", id="both user and token supplier"),
         ],
-        name_func=get_test_case_name_without_index,
     )
-    def test_it_displays_no_warnings_when(self, _name, username, token):
+    def test_it_displays_no_warnings_when(
+        self, requests_mock: MagicMock, username: str, token: str
+    ):
         with warnings.catch_warnings(record=True) as warnings_list:
-            self._init_with_user_name_token_and_assert(username, token)
-            self.assertEqual(len(warnings_list), 0)
+            self._init_with_user_name_token_and_assert(requests_mock, username, token)
+            assert not warnings_list
 
-    def test_it_is_used_when_credentials_supplied(self):
-        username_token = ("some username", "some token")
+    def test_it_is_used_when_credentials_supplied(self, requests_mock: MagicMock):
+        credentials = ("some username", "some token")
 
-        def _assertion(outer_self: MockedOwnerAndRepoSet):
-            outer_self._requests_mock.get.assert_called_with(ANY, auth=username_token)
+        self._init_with_user_name_token_and_assert(
+            requests_mock,
+            *credentials,
+            assertion=lambda _: requests_mock.get.assert_called_with(ANY, auth=credentials),
+        )
 
-        self._init_with_user_name_token_and_assert(*username_token, _assertion)
+    def test_it_is_suggested_when_api_rate_exceeded(self, requests_mock: MagicMock):
+        def _assertion(assert_github_issue: AssertGitHubIssue):
+            _set_limit_exceeded(requests_mock)
 
-    def test_it_is_suggested_when_api_rate_exceeded(self):
-        def _assertion(outer_self: MockedOwnerAndRepoSet):
-            outer_self._set_limit_exceeded()
+            with pytest.raises(HTTPError, match=".*Consider setting.*"):
+                assert_github_issue.is_open(_ISSUE_NUMBER)
 
-            with outer_self.assertRaisesRegex(HTTPError, ".*Consider setting.*"):
-                outer_self.assert_github_issue_is_open(_ISSUE_NUMBER)
-
-        self._init_with_user_name_token_and_assert("", "", _assertion)
+        self._init_with_user_name_token_and_assert(requests_mock, "", "", _assertion)
