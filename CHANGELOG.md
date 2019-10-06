@@ -14,6 +14,11 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.1.0] - 2019-10-06
+
+# Added
+* `AssertGitHubIssue.current_release()` shows current number of releases in failing test when no number given.
+
 ## [2.0.0] - 2019-10-06
 
 ## Added
@@ -57,7 +62,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.0.0...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.0...HEAD
+[2.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.0.0...releases/2.1.0
 [2.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.2.0...releases/2.0.0
 [1.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.1...releases/1.2.0
 [1.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...releases/1.1.1

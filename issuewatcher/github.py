@@ -129,11 +129,15 @@ class AssertGitHubIssue:
         """
         self.is_state(issue_id, GitHubIssueState.closed, msg)
 
-    def current_release(self, current_release_number: int) -> None:
+    def current_release(self, current_release_number: Optional[int] = None) -> None:
         """
         Checks number of releases of watched repository. Useful when issue is fixed (closed)
         but not released yet. This assertion will fail when the number of releases does not
         match.
+
+        If you don't know how many releases are there at the moment, leave the
+        ``current_release_number`` unset. This test will fail and show the
+        current number as part of the error message.
 
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
@@ -149,6 +153,11 @@ class AssertGitHubIssue:
 
             actual_release_count = len(response.json())
             self._cache["release_count"] = str(actual_release_count)
+
+        assert current_release_number is not None, (
+            f"This test does not have any number of releases set. Current number "
+            f"of releases is '{actual_release_count}'."
+        )
 
         assert current_release_number <= actual_release_count, (
             f"This test seems improperly configured. Expected '{current_release_number}' "

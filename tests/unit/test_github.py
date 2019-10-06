@@ -175,6 +175,18 @@ class TestReleaseNumberCheck:
         with pytest.raises(AssertionError, match=".*improperly configured.*"):
             assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
+    @staticmethod
+    def test_it_shows_current_release_number_if_none_given(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_number_or_releases_to(requests_mock, 1)
+        with pytest.raises(
+            AssertionError,
+            match=".*test does not have any number of releases set.*"
+            "number of releases is '[0-9]+'",
+        ):
+            assert_github_issue_no_cache.current_release()
+
 
 class TestHttpErrorRaising:
     _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"
