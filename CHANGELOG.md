@@ -14,6 +14,8 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.0.0] - 2019-10-06
+
 ## Added
 * Compatibility with pytest
 * Repository ID supplied through constructor as a single string
@@ -55,7 +57,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/1.2.0...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.0.0...HEAD
+[2.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.2.0...releases/2.0.0
 [1.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.1...releases/1.2.0
 [1.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/1.1.0...releases/1.1.1
 [1.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/1.0.0...releases/1.1.1
