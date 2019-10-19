@@ -80,7 +80,7 @@ class AssertGitHubIssue:
         if response.status_code != 200:
             raise HTTPError(
                 f"Request to GitHub Failed.\n{response.status_code} {response.reason}\n"
-                f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content}"
+                f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content!r}"
             )
 
     def is_state(
