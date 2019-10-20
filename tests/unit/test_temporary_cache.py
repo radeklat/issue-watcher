@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from ujson import dumps, loads
 
-from temporary_cache import TemporaryCache
+from issuewatcher.temporary_cache import TemporaryCache
 
 _PROJECT = "radeklat/issue-watcher"
 _KEY_IN = "1"

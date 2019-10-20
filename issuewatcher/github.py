@@ -9,6 +9,7 @@ import requests
 from requests import HTTPError, Response
 
 from issuewatcher.temporary_cache import TemporaryCache
+from issuewatcher.version_check import check_python_support
 
 
 class GitHubIssueState(Enum):
@@ -27,6 +28,8 @@ class AssertGitHubIssue:
         :param repository_id: GitHub repository ID formatted as "owner/repository name".
         :raises ValueError: When the repository ID is not two slash separated strings.
         """
+        check_python_support()
+
         self._rate_limit_exceeded_extra_msg: str = ""
         self._auth: Optional[Tuple[str, str]] = (
             os.environ.get(self._ENV_VAR_USERNAME, ""),
