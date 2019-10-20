@@ -14,6 +14,9 @@ Types of changes are:
 
 ## Unreleased
 
+### Added
+* Python version check to warn/fail for unsupported Python versions.
+
 ## [2.1.1] - 2019-10-19
 
 ### Fixed
