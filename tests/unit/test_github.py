@@ -1,5 +1,5 @@
 import warnings
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from time import perf_counter, time
 from typing import Callable, List
 from unittest.mock import ANY, MagicMock, patch
@@ -401,3 +401,35 @@ class TestAuthentication:
                 assert_github_issue.is_open(_ISSUE_NUMBER)
 
         self._init_with_user_name_token_and_assert(requests_mock, "", "", _assertion)
+
+
+@pytest.fixture(scope="function")
+def python_version_mock(request):
+    patcher = patch("platform.python_version", return_value=request.param)
+
+    try:
+        yield patcher.start()
+    finally:
+        patcher.stop()
+
+
+class TestPythonSupportChecks:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "python_version_mock,expectation",
+        [
+            pytest.param(
+                "3.5.0", pytest.raises(OSError), id="OSError when Python version is too low"
+            ),
+            pytest.param(
+                "3.6.0", ExitStack(), id="nothing when Python version is in range"
+            ),
+            pytest.param(
+                "3.8.0", pytest.warns(Warning), id="Warning when Python version is too high"
+            ),
+        ],
+        indirect=["python_version_mock"],
+    )
+    def test_it_raises(python_version_mock, expectation):  # pylint: disable=unused-argument
+        with expectation:
+            AssertGitHubIssue(_REPOSITORY_ID)

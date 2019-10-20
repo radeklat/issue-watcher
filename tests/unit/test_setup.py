@@ -4,7 +4,7 @@ from subprocess import DEVNULL, call
 
 import pytest
 
-from issuewatcher import APPLICATION_NAME, __version__ as app_version
+from issuewatcher.constants import __version__ as app_version, APPLICATION_NAME
 
 SOURCES_ROOT = abspath(join(dirname(__file__), "..", ".."))
 
