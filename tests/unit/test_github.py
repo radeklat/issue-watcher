@@ -425,7 +425,7 @@ class TestPythonSupportChecks:
                 "3.6.0", ExitStack(), id="nothing when Python version is in range"
             ),
             pytest.param(
-                "3.8.0", pytest.warns(Warning), id="Warning when Python version is too high"
+                "3.9.0", pytest.warns(Warning), id="Warning when Python version is too high"
             ),
         ],
         indirect=["python_version_mock"],
