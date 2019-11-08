@@ -20,7 +20,8 @@ setuptools.setup(
     long_description=(
         "{description}\n\nSee project on GitHub: "
         "https://github.com/radeklat/{app_name}\n\n"
-        "Changelog: https://github.com/radeklat/{app_name}/blob/develop/CHANGELOG.md".format(
+        "Changelog: "
+        "https://github.com/radeklat/{app_name}/blob/develop/CHANGELOG.md".format(
             app_name=APPLICATION_NAME, description=DESCRIPTION
         )
     ),
@@ -33,6 +34,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Bug Tracking",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Software Development :: Quality Assurance",

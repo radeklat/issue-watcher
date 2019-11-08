@@ -14,6 +14,9 @@ Types of changes are:
 
 ## Unreleased
 
+### Changed
+* Verified support for Python 3.8 which required couple of constants to be changed.
+
 ## [2.2.0] - 2019-10-20 
 
 ### Added

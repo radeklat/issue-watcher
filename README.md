@@ -24,6 +24,7 @@ This library provides several useful assertions that are watching when an issue 
 
 * 3.6
 * 3.7
+* 3.8
 
 Why not 3.5 and lower? I wanted to build a modern library with full type hinting support and f-strings. 3.4 and lower already reached [end-of-life](https://devguide.python.org/devcycle/#end-of-life-branches).
     

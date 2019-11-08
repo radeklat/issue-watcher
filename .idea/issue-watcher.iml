@@ -8,9 +8,11 @@
       <excludeFolder url="file://$MODULE_DIR$/.venv_Linux_3.5.7" />
       <excludeFolder url="file://$MODULE_DIR$/.venv_Linux_3.6.9" />
       <excludeFolder url="file://$MODULE_DIR$/.venv_Linux_3.7.4" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv_Linux_3.7.5" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv_Linux_3.8.0" />
       <excludeFolder url="file://$MODULE_DIR$/cover" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.6 (issue-watcher)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.8 (issue-watcher)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

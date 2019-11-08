@@ -10,6 +10,9 @@ matrix:
   - name: Python 3.7 on Bionic Linux
     python: 3.7
     dist: bionic
+  - name: Python 3.8 on Bionic Linux
+    python: 3.8
+    dist: bionic
 install:
 - pip install -r requirements.txt -r requirements-test.txt
 script:
