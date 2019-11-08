@@ -14,6 +14,8 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.2.1] - 2019-11-08
+
 ### Changed
 * Verified support for Python 3.8 which required couple of constants to be changed.
 
@@ -75,7 +77,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.0...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...HEAD
+[2.2.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.0...releases/2.2.1
 [2.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.1...releases/2.2.0
 [2.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.0...releases/2.1.1
 [2.1.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.0.0...releases/2.1.0
