@@ -40,8 +40,10 @@ setuptools.setup(
         "Topic :: Software Development :: Quality Assurance",
         "Topic :: Software Development :: Testing :: Unit",
         "Topic :: System :: Monitoring",
+        "Typing :: Typed",
     ],
     license="MIT",
     packages=setuptools.find_packages(exclude=["tests.*"]),
     install_requires=install_requires,
+    package_data={"issuewatcher": ["py.typed"]},
 )
