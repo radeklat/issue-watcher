@@ -14,6 +14,11 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.2.2] - 2020-03-25
+
+### Fixed
+* Annotated package as typed according to [PEP 561](https://www.python.org/dev/peps/pep-0561/).
+
 ## [2.2.1] - 2019-11-08
 
 ### Changed
@@ -77,7 +82,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.2...HEAD
+[2.2.2]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...2.2.2
 [2.2.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.0...releases/2.2.1
 [2.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.1...releases/2.2.0
 [2.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.0...releases/2.1.1
