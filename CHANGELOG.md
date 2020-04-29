@@ -14,6 +14,11 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.2.3] - 2020-03-25
+
+### Fixed
+* Fixed version of pylint until testing script is compatible with 2.5.0+
+
 ## [2.2.2] - 2020-03-25
 
 ### Fixed
@@ -82,8 +87,9 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.2...HEAD
-[2.2.2]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...2.2.2
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.3...HEAD
+[2.2.3]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.2...releases/2.2.3
+[2.2.2]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...releases/2.2.2
 [2.2.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.0...releases/2.2.1
 [2.2.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.1...releases/2.2.0
 [2.1.1]: https://github.com/radeklat/issue-watcher/compare/releases/2.1.0...releases/2.1.1

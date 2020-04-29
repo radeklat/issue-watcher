@@ -137,7 +137,7 @@ class TestFailingStateCheck:
     def test_it_does_not_contains_custom_message_if_none_provided(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        with pytest.raises(AssertionError, match=f".*open\\. Visit.*"):
+        with pytest.raises(AssertionError, match=".*open\\. Visit.*"):
             _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 
 
