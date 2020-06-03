@@ -1,11 +1,13 @@
 import os
 import warnings
 from datetime import timedelta
+from distutils.version import Version
 from enum import Enum
 from time import time
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+from packaging.version import parse
 from requests import HTTPError, Response
 
 from issuewatcher.temporary_cache import TemporaryCache
@@ -174,4 +176,49 @@ class AssertGitHubIssue:
             f"New release of '{self._repository_id}' is available. Expected "
             f"{current_release_number} releases but {actual_release_count} are now "
             f"available. Visit {self._URL_WEB}/{self._repository_id}/releases."
+        )
+
+    def _ordered_version_numbers(self, tags: List[Dict[str, Any]]) -> List[Version]:
+        return sorted(
+            (parse(item["ref"].replace("refs/tags/", "")) for item in tags), reverse=True
+        )
+
+    def fixed_in(self, version: Optional[str] = None) -> None:
+        """
+        Checks if there is a release with higher or equal version number in the watched
+        repository. Useful when issue is fixed (closed), not yet released but the maintainer
+        has stated in which version it will be released. This assertion will fail when the
+        expected version or higher is available.
+
+        If you would like to test the version parsing, leave the ``version`` parameter
+        unset. The test will fail and show the latest version as part of the error message.
+
+        Version numbers are interpreted according to PEP 440
+        (https://www.python.org/dev/peps/pep-0440/).
+
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
+        """
+        releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
+
+        try:
+            latest_version = int(self._cache["latest_version"])
+            pass  # pylint: disable=unnecessary-pass; this line should be covered
+        except (KeyError, ValueError):
+            response: Response = requests.get(releases_url, auth=self._auth)
+            self._handle_connection_error(response)
+
+            latest_version = self._ordered_version_numbers(response.json())[0]
+            self._cache["latest_version"] = str(latest_version)
+
+        assert version is not None, (
+            f"This test does not have expected version number set. Latest version is "
+            f"'{latest_version}'."
+        )
+
+        awaiting_version = parse(version)
+
+        assert latest_version < awaiting_version, (
+            f"Release '{version}' of '{self._repository_id}' is available. Latest version "
+            f"is '{latest_version}'. Visit {self._URL_WEB}/{self._repository_id}/releases."
         )

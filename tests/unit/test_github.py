@@ -1,3 +1,4 @@
+import re
 import warnings
 from contextlib import ExitStack, contextmanager
 from time import perf_counter, time
@@ -144,9 +145,16 @@ class TestFailingStateCheck:
 _CURRENT_NUMBER_OF_RELEASES = 3
 
 
-def _set_number_or_releases_to(req_mock: MagicMock, count: int, status_code: int = 200):
+def _set_number_of_releases_to(req_mock: MagicMock, count: int, status_code: int = 200):
     mock_response = MagicMock()
     mock_response.json.return_value = [{}] * count
+    mock_response.status_code = status_code
+    req_mock.get.return_value = mock_response
+
+
+def _set_git_tags_to(req_mock: MagicMock, tags: List[str], status_code: int = 200):
+    mock_response = MagicMock()
+    mock_response.json.return_value = [{"ref": f"refs/tags/{tag}"} for tag in tags]
     mock_response.status_code = status_code
     req_mock.get.return_value = mock_response
 
@@ -156,7 +164,7 @@ class TestReleaseNumberCheck:
     def test_it_fails_when_new_releases_available(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES + 1)
+        _set_number_of_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES + 1)
         with pytest.raises(AssertionError, match="New release of .*"):
             assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
@@ -164,14 +172,14 @@ class TestReleaseNumberCheck:
     def test_it_does_not_fail_when_expected_releases_available(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES)
+        _set_number_of_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES)
         assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
     @staticmethod
     def test_it_checks_if_release_number_is_properly_configured(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
+        _set_number_of_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES - 1)
         with pytest.raises(AssertionError, match=".*improperly configured.*"):
             assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
 
@@ -179,13 +187,101 @@ class TestReleaseNumberCheck:
     def test_it_shows_current_release_number_if_none_given(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        _set_number_or_releases_to(requests_mock, 1)
+        _set_number_of_releases_to(requests_mock, 1)
         with pytest.raises(
             AssertionError,
             match=".*test does not have any number of releases set.*"
             "number of releases is '[0-9]+'",
         ):
             assert_github_issue_no_cache.current_release()
+
+
+class TestReleaseVersionCheck:
+    @staticmethod
+    @pytest.mark.parametrize(
+        "latest_version",
+        [
+            pytest.param("2.0.0", id="exact match"),
+            pytest.param("2.0.0+1", id="build metadata above expected"),
+            pytest.param("2.0.1", id="patch number above expected"),
+            pytest.param("2.1.0", id="minor number above expected"),
+            pytest.param("3.0.0", id="major number above expected"),
+        ],
+    )
+    def test_it_fails_when_latest_version_is(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+        latest_version: str,
+    ):
+        _set_git_tags_to(requests_mock, [latest_version])
+        with pytest.raises(
+            AssertionError, match=f"Release '2\\.0\\.0' of.*'{re.escape(latest_version)}'"
+        ):
+            assert_github_issue_no_cache.fixed_in("2.0.0")
+
+    @staticmethod
+    def test_it_fails_when_latest_version_high_enough_but_first_is_tag_is_not(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_git_tags_to(requests_mock, ["1.0.0", "3.0.0"])
+        with pytest.raises(AssertionError, match=f"Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
+            assert_github_issue_no_cache.fixed_in("2.0.0")
+
+    @staticmethod
+    def test_it_ignores_invalid_version_numbers(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_git_tags_to(requests_mock, ["not_a_release", "1.0.0", "releases/3.0.0"])
+        assert_github_issue_no_cache.fixed_in("2.0.0")
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "latest_version",
+        [
+            pytest.param("2.0.0-alpha", id="pre-release above expected"),
+            pytest.param("2.0.0-alpha.1", id="numbered pre-release above expected"),
+            pytest.param(
+                "2.0.0-alpha+1", id="pre-release and build metadata above expected"
+            ),
+            pytest.param("2.0.0a", id="non-semantic pre-release above expected"),
+            pytest.param("2.0.0a0", id="non-semantic numbered pre-release above expected"),
+            pytest.param("1.0.0", id="below expected"),
+        ],
+    )
+    def test_it_does_not_fail_when_latest_version_is(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+        latest_version: str,
+    ):
+        _set_git_tags_to(requests_mock, [latest_version])
+        assert_github_issue_no_cache.fixed_in("2.0.0")
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "version",
+        [
+            pytest.param("releases/2.0.1", id="releases/2.0.1"),
+            pytest.param("not_a_release_tag", id="not_a_release_tag"),
+        ],
+    )
+    def test_it_ignores_invalid_version_tags(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+        requests_mock: MagicMock,
+        version: str,
+    ):
+        _set_git_tags_to(requests_mock, [version, "1.0.0"])
+        assert_github_issue_no_cache.fixed_in("2.0.0")
+
+    @staticmethod
+    def test_it_shows_current_release_number_if_none_given(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_git_tags_to(requests_mock, ["2.0.0"])
+        with pytest.raises(
+            AssertionError,
+            match=".*test does not have expected version number set.*version is.*2\\.0\\.0",
+        ):
+            assert_github_issue_no_cache.fixed_in()
 
 
 class TestHttpErrorRaising:
@@ -202,7 +298,7 @@ class TestHttpErrorRaising:
     def test_it_raises_when_status_not_200_in_releases_check(
         self, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        _set_number_or_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES, 500)
+        _set_number_of_releases_to(requests_mock, _CURRENT_NUMBER_OF_RELEASES, 500)
 
         with pytest.raises(HTTPError, match=self._GENERIC_ERROR_MESSAGE_PATTERN):
             assert_github_issue_no_cache.current_release(_CURRENT_NUMBER_OF_RELEASES)
