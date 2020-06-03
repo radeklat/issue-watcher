@@ -283,6 +283,19 @@ class TestReleaseVersionCheck:
         ):
             assert_github_issue_no_cache.fixed_in()
 
+    @staticmethod
+    def test_it_parses_out_version_specified_by_pattern(
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
+    ):
+        _set_git_tags_to(
+            requests_mock,
+            ["releases/3.0.0", "1.0.0", "not_a_release_tag", "releases/not_a_version"],
+        )
+        with pytest.raises(AssertionError, match=f"Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
+            assert_github_issue_no_cache.fixed_in(
+                "2.0.0", pattern="releases/(?P<version>.*)"
+            )
+
 
 class TestHttpErrorRaising:
     _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"

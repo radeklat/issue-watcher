@@ -1,10 +1,11 @@
 import os
+import re
 import warnings
 from datetime import timedelta
 from distutils.version import Version
 from enum import Enum
 from time import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import requests
 from packaging.version import parse
@@ -178,23 +179,48 @@ class AssertGitHubIssue:
             f"available. Visit {self._URL_WEB}/{self._repository_id}/releases."
         )
 
-    def _ordered_version_numbers(self, tags: List[Dict[str, Any]]) -> List[Version]:
+    @staticmethod
+    def _parse_version_number(string: str, pattern: Pattern) -> Version:
+        match = pattern.match(string.replace("refs/tags/", ""))
+        if not match:
+            return parse("")
+        return parse(match.group("version"))
+
+    def _ordered_version_numbers(
+        self, tags: List[Dict[str, Any]], pattern: str
+    ) -> List[Version]:
+        version_pattern = re.compile(pattern)
         return sorted(
-            (parse(item["ref"].replace("refs/tags/", "")) for item in tags), reverse=True
+            (self._parse_version_number(item["ref"], version_pattern) for item in tags),
+            reverse=True,
         )
 
-    def fixed_in(self, version: Optional[str] = None) -> None:
+    def fixed_in(
+        self, version: Optional[str] = None, pattern: str = "(?P<version>.*)"
+    ) -> None:
         """
         Checks if there is a release with higher or equal version number in the watched
         repository. Useful when issue is fixed (closed), not yet released but the maintainer
         has stated in which version it will be released. This assertion will fail when the
         expected version or higher is available.
 
-        If you would like to test the version parsing, leave the ``version`` parameter
-        unset. The test will fail and show the latest version as part of the error message.
+        Git tags are used as version numbers and are interpreted according to PEP 440
+        (https://www.python.org/dev/peps/pep-0440/). Anything that does not resemble a
+        valid version number will be ignored. To parse git tags that contain version
+        numbers, use the ``pattern`` argument.
 
-        Version numbers are interpreted according to PEP 440
-        (https://www.python.org/dev/peps/pep-0440/).
+        :param version: The lowest version number to trigger an ``AssertionError``.
+        :param pattern: Use for parsing version number out of a git tag. The value is a
+            regular expression acceptable by :py:func:`re.compile`. It is expected that the
+            version is wrapped in a group named ``version``.
+
+            Example: To match version number ``2.3.4`` in ``releases/2.3.4``, use
+            ``pattern="releases/(?P<version>.*)"``. Note that :py:func:`re.match` is used
+            internally so the string must be matched from the beginning.
+
+            If you would like to test the version parsing, leave the ``version`` parameter
+            unset. The test will fail and show the latest version as part of the error
+            message.
 
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
@@ -208,7 +234,7 @@ class AssertGitHubIssue:
             response: Response = requests.get(releases_url, auth=self._auth)
             self._handle_connection_error(response)
 
-            latest_version = self._ordered_version_numbers(response.json())[0]
+            latest_version = self._ordered_version_numbers(response.json(), pattern)[0]
             self._cache["latest_version"] = str(latest_version)
 
         assert version is not None, (
