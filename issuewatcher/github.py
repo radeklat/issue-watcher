@@ -2,13 +2,12 @@ import os
 import re
 import warnings
 from datetime import timedelta
-from distutils.version import Version
 from enum import Enum
 from time import time
-from typing import Any, Dict, List, Optional, Pattern, Tuple
+from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import requests
-from packaging.version import parse
+from packaging.version import LegacyVersion, Version, parse
 from requests import HTTPError, Response
 
 from issuewatcher.temporary_cache import TemporaryCache
@@ -18,6 +17,9 @@ from issuewatcher.version_check import check_python_support
 class GitHubIssueState(Enum):
     open = "open"
     closed = "closed"
+
+
+AnyVersion = Union[Version, LegacyVersion]
 
 
 class AssertGitHubIssue:
@@ -180,7 +182,7 @@ class AssertGitHubIssue:
         )
 
     @staticmethod
-    def _parse_version_number(string: str, pattern: Pattern) -> Version:
+    def _parse_version_number(string: str, pattern: Pattern) -> AnyVersion:
         match = pattern.match(string.replace("refs/tags/", ""))
         if not match:
             return parse("")
@@ -188,7 +190,7 @@ class AssertGitHubIssue:
 
     def _ordered_version_numbers(
         self, tags: List[Dict[str, Any]], pattern: str
-    ) -> List[Version]:
+    ) -> List[AnyVersion]:
         version_pattern = re.compile(pattern)
         return sorted(
             (self._parse_version_number(item["ref"], version_pattern) for item in tags),
@@ -224,6 +226,7 @@ class AssertGitHubIssue:
 
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
+        :raises ValueError: When ``pattern`` does not contain correct group.
         """
         releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
 
@@ -233,7 +236,7 @@ class AssertGitHubIssue:
             )
 
         try:
-            latest_version = int(self._cache["latest_version"])
+            latest_version = parse(self._cache["latest_version"])
             pass  # pylint: disable=unnecessary-pass; this line should be covered
         except (KeyError, ValueError):
             response: Response = requests.get(releases_url, auth=self._auth)
