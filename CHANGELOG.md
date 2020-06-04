@@ -14,6 +14,11 @@ Types of changes are:
 
 ## Unreleased
 
+## [2.3.0] - 2020-06-04
+
+### Added
+* Option to check release numbers with `AssertGitHubIssue.fixed_in()`.
+
 ## [2.2.4] - 2020-05-06
 
 ### Fixed
@@ -92,7 +97,8 @@ Types of changes are:
 * Error handling printing out full message received.
 * Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.4...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/2.3.0...HEAD
+[2.3.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.4...releases/2.3.0
 [2.2.4]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.3...releases/2.2.4
 [2.2.3]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.2...releases/2.2.3
 [2.2.2]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.1...releases/2.2.2
