@@ -84,7 +84,11 @@ The updated test case will now fail if issue gets re-opened.
 
 ## ... but fix is not released yet
 
-To watch for the fix to be released, you can add a release watch test. Assuming that there are 25 releases at the moment of writing the test:
+To watch for the fix to be released, you can add a release watch test.
+
+### I don't know which version will contain the fix
+
+Assuming that there are 25 releases at the moment of writing the test:
 
     def test_safety_fix_has_not_been_released(self):
         AssertGitHubIssue("pyupio/safety").current_release(25)
@@ -97,6 +101,13 @@ If you're not sure how many releases there are at the moment, you can leave the 
 and the test will report it in the failing test:
 
     This test does not have any number of releases set. Current number of releases is '25'.
+
+### I know the version of a release that will contain the fix
+
+Sometimes the maintainer will mention which release will include the fix. Let's assume the release will be `2.0.0`. To get notified about it, use:
+
+    def test_safety_fix_has_not_been_released(self):
+        AssertGitHubIssue("pyupio/safety").fixed_in("2.0.0")
         
 ## Fix is released
         
@@ -104,8 +115,13 @@ Once a new release is available, the test above will fail with:
 
     New release of 'pyupio/safety' is available. Expected 25 releases but 26 are
     now available. Visit https://github.com/pyupio/safety/releases.
+
+or
+
+    Release '2.0.0' of 'pyupio/safety' is available. Latest version is
+    '2.2.4'. Visit https://github.com/pyupio/safety/releases.
     
-Now you can remove the tech debt and the release test case. However, keep the issue status test case to check for regression.
+Now you can remove the tech debt and the release test case. However, keep the issue status test case to check for a regression.
 
 # Environment variables
 
