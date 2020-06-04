@@ -296,6 +296,13 @@ class TestReleaseVersionCheck:
                 "2.0.0", pattern="releases/(?P<version>.*)"
             )
 
+    @staticmethod
+    def test_it_refuses_pattern_without_a_group(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        with pytest.raises(ValueError, match=".*group.*"):
+            assert_github_issue_no_cache.fixed_in("2.0.0", pattern="no_group")
+
 
 class TestHttpErrorRaising:
     _GENERIC_ERROR_MESSAGE_PATTERN = ".*Request to GitHub Failed.*"
@@ -369,6 +376,17 @@ class TestChecksLive:
     ):
         with pytest.raises(AssertionError, match=".*New release of .*") as ex:
             assert_github_issue_no_cache.current_release(0)
+
+        print(ex)  # for quick grab of string for documentation
+
+    @staticmethod
+    def test_version_check_fails_when_available(
+        assert_github_issue_no_cache: AssertGitHubIssue
+    ):
+        with pytest.raises(AssertionError, match="Release '2\\.0\\.0' of") as ex:
+            assert_github_issue_no_cache.fixed_in(
+                "2.0.0", pattern="releases/(?P<version>.*)"
+            )
 
         print(ex)  # for quick grab of string for documentation
 

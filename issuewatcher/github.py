@@ -227,6 +227,11 @@ class AssertGitHubIssue:
         """
         releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
 
+        if "(?P<version>" not in pattern:
+            raise ValueError(
+                "The 'pattern' parameter must contain a group '(?P<version>…)'."
+            )
+
         try:
             latest_version = int(self._cache["latest_version"])
             pass  # pylint: disable=unnecessary-pass; this line should be covered
