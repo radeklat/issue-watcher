@@ -1,11 +1,13 @@
 import os
+import re
 import warnings
 from datetime import timedelta
 from enum import Enum
 from time import time
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
 
 import requests
+from packaging.version import LegacyVersion, Version, parse
 from requests import HTTPError, Response
 
 from issuewatcher.temporary_cache import TemporaryCache
@@ -15,6 +17,9 @@ from issuewatcher.version_check import check_python_support
 class GitHubIssueState(Enum):
     open = "open"
     closed = "closed"
+
+
+AnyVersion = Union[Version, LegacyVersion]
 
 
 class AssertGitHubIssue:
@@ -174,4 +179,80 @@ class AssertGitHubIssue:
             f"New release of '{self._repository_id}' is available. Expected "
             f"{current_release_number} releases but {actual_release_count} are now "
             f"available. Visit {self._URL_WEB}/{self._repository_id}/releases."
+        )
+
+    @staticmethod
+    def _parse_version_number(string: str, pattern: Pattern) -> AnyVersion:
+        match = pattern.match(string.replace("refs/tags/", ""))
+        if not match:
+            return parse("")
+        return parse(match.group("version"))
+
+    def _ordered_version_numbers(
+        self, tags: List[Dict[str, Any]], pattern: str
+    ) -> List[AnyVersion]:
+        version_pattern = re.compile(pattern)
+        return sorted(
+            (self._parse_version_number(item["ref"], version_pattern) for item in tags),
+            reverse=True,
+        )
+
+    def fixed_in(
+        self, version: Optional[str] = None, pattern: str = "(?P<version>.*)"
+    ) -> None:
+        """
+        Checks if there is a release with higher or equal version number in the watched
+        repository. Useful when issue is fixed (closed), not yet released but the maintainer
+        has stated in which version it will be released. This assertion will fail when the
+        expected version or higher is available.
+
+        Git tags are used as version numbers and are interpreted according to PEP 440
+        (https://www.python.org/dev/peps/pep-0440/). Anything that does not resemble a
+        valid version number will be ignored. To parse git tags that contain version
+        numbers, use the ``pattern`` argument.
+
+        :param version: The lowest version number to trigger an ``AssertionError``.
+        :param pattern: Use for parsing version number out of a git tag. The value is a
+            regular expression acceptable by :py:func:`re.compile`. It is expected that the
+            version is wrapped in a group named ``version``.
+
+            Example: To match version number ``2.3.4`` in ``releases/2.3.4``, use
+            ``pattern="releases/(?P<version>.*)"``. Note that :py:func:`re.match` is used
+            internally so the string must be matched from the beginning.
+
+            If you would like to test the version parsing, leave the ``version`` parameter
+            unset. The test will fail and show the latest version as part of the error
+            message.
+
+        :raises requests.HTTPError: When response status code from GitHub is not 200.
+        :raises AssertionError: When test fails.
+        :raises ValueError: When ``pattern`` does not contain correct group.
+        """
+        releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
+
+        if "(?P<version>" not in pattern:
+            raise ValueError(
+                "The 'pattern' parameter must contain a group '(?P<version>…)'."
+            )
+
+        try:
+            latest_version = parse(self._cache["latest_version"])
+            pass  # pylint: disable=unnecessary-pass; this line should be covered
+        except (KeyError, ValueError):
+            response: Response = requests.get(releases_url, auth=self._auth)
+            self._handle_connection_error(response)
+
+            latest_version = self._ordered_version_numbers(response.json(), pattern)[0]
+            self._cache["latest_version"] = str(latest_version)
+
+        assert version is not None, (
+            f"This test does not have expected version number set. Latest version is "
+            f"'{latest_version}'."
+        )
+
+        awaiting_version = parse(version)
+
+        assert latest_version < awaiting_version, (
+            f"Release '{version}' of '{self._repository_id}' is available. Latest version "
+            f"is '{latest_version}'. Visit {self._URL_WEB}/{self._repository_id}/releases."
         )
