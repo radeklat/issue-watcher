@@ -1,7 +1,5 @@
 [tool.black]
-line-length = 92
-py36 = true
-include = '\.py$'
+line-length = 120
 exclude = '''
 /(
     \.eggs
@@ -9,11 +7,14 @@ exclude = '''
   | \.hg
   | \.mypy_cache
   | \.tox
-  | \.venv*
+  | \.venv
   | _build
   | buck-out
   | build
   | dist
-  | \.venv.*
 )/
 '''
+
+[tool.pytest.ini_options]
+testpaths = "tests/unit"
+junit_family = "xunit2"
