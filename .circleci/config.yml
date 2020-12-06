@@ -99,6 +99,7 @@ workflows:
   all_pipelines:
     jobs:
       - test:
+          context: issue watcher
           name: Python << matrix.version >> tests
           matrix:
             parameters:
