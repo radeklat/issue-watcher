@@ -4,8 +4,8 @@ Sometimes it happens that you discover a bug in a library that you are using and
 This library provides several useful assertions that are watching when an issue is closed and failing a test to let you know fixed functionality is available. A good way to automatically manage and reduce known technical debt.
 
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/issue-watcher)
-[![Build Status](https://travis-ci.org/radeklat/issue-watcher.svg?branch=master)](https://travis-ci.org/radeklat/issue-watcher)
-[![codecov](https://codecov.io/gh/radeklat/issue-watcher/branch/master/graph/badge.svg)](https://codecov.io/gh/radeklat/issue-watcher)
+![CircleCI](https://img.shields.io/circleci/build/github/radeklat/issue-watcher)
+![Codecov](https://img.shields.io/codecov/c/github/radeklat/issue-watcher)
 ![PyPI - License](https://img.shields.io/pypi/l/issue-watcher)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/issue-watcher)
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/radeklat/issue-watcher)
@@ -21,14 +21,6 @@ This library provides several useful assertions that are watching when an issue 
 ## Issue trackers
 
 * GitHub
-
-## Python
-
-* 3.6
-* 3.7
-* 3.8
-
-Why not 3.5 and lower? I wanted to build a modern library with full type hinting support and f-strings. 3.4 and lower already reached [end-of-life](https://devguide.python.org/devcycle/#end-of-life-branches).
     
 # Usage
 
