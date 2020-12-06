@@ -21,6 +21,7 @@ dataclasses = {version = "*", markers = "python_version < '3.7'"}
 importlib_metadata = {version = "*", markers = "python_version < '3.8'"}
 zipp = {version = "*", markers = "python_version < '3.8'"}
 twine = "*"
+pipfile = "==0.0.2"
 
 [packages]
 requests="*"

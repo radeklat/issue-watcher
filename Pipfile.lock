@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3d43ad690d87dd5d319116130b681be062170a12c40e5b568220a015b4bfbd7f"
+            "sha256": "2683d4bbb963bdbedb5635f8135c9513a83dffd402c9c464cd010946214c25f6"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -475,6 +475,13 @@
             ],
             "index": "pypi",
             "version": "==2020.11.15"
+        },
+        "pipfile": {
+            "hashes": [
+                "sha256:f7d9f15de8b660986557eb3cc5391aa1a16207ac41bc378d03f414762d36c984"
+            ],
+            "index": "pypi",
+            "version": "==0.0.2"
         },
         "pkginfo": {
             "hashes": [

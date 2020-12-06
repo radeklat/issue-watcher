@@ -1,10 +1,10 @@
 from os.path import abspath, dirname, isfile, join
 from shutil import rmtree
-from subprocess import DEVNULL, call
+from subprocess import call
 
 import pytest
 
-from issuewatcher.constants import __version__ as app_version, APPLICATION_NAME
+from issuewatcher.constants import APPLICATION_NAME, __version__ as app_version
 
 SOURCES_ROOT = abspath(join(dirname(__file__), "..", ".."))
 
@@ -27,7 +27,7 @@ def build_return_code():
     cleanup_build_artefacts()
 
     try:
-        yield call(["python", "setup.py", "sdist", "bdist_wheel"], stdout=DEVNULL, stderr=DEVNULL)
+        yield call(["inv", "build"])
     finally:
         cleanup_build_artefacts()
 
