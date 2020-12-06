@@ -105,6 +105,7 @@ workflows:
             - test
       - deploy_library:
           name: Deploy to pypi
+          context: issue watcher
           requires:
             - Build
 #          filters:
