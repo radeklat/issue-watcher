@@ -45,9 +45,7 @@ class TestStateCheck:
         assert_github_issue_no_cache.is_state(ISSUE_NUMBER, expected_state)
 
 
-def _fail_open_state_check(
-    assert_github_issue: AssertGitHubIssue, req_mock: MagicMock, msg: str = ""
-):
+def _fail_open_state_check(assert_github_issue: AssertGitHubIssue, req_mock: MagicMock, msg: str = ""):
     set_issue_state(req_mock, GitHubIssueState.closed.value)
     assert_github_issue.is_open(ISSUE_NUMBER, msg)
 
@@ -57,20 +55,13 @@ class TestFailingStateCheck:
     @pytest.mark.parametrize(
         "regexp",
         [
-            pytest.param(
-                f"https://github.com/radeklat/issue-watcher/issues/{ISSUE_NUMBER}",
-                id="link to issue",
-            ),
+            pytest.param(f"https://github.com/radeklat/issue-watcher/issues/{ISSUE_NUMBER}", id="link to issue"),
             pytest.param("'radeklat/issue-watcher'", id="owner and repository"),
             pytest.param("no longer open\\.", id="expected issue state"),
             pytest.param(f"#{ISSUE_NUMBER}", id="issue number"),
         ],
     )
-    def test_it_contains(
-        regexp: str,
-        assert_github_issue_no_cache: AssertGitHubIssue,
-        requests_mock: MagicMock,
-    ):
+    def test_it_contains(regexp: str, assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock):
         with pytest.raises(AssertionError, match=f".*{regexp}.*"):
             _fail_open_state_check(assert_github_issue_no_cache, requests_mock)
 

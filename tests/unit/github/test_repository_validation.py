@@ -12,10 +12,7 @@ class TestRepositoryAttributeHandling:
     @staticmethod
     @pytest.mark.parametrize(
         "constructor_arguments",
-        [
-            pytest.param([""], id="has no slashes"),
-            pytest.param(["//"], id="has too many slashes"),
-        ],
+        [pytest.param([""], id="has no slashes"), pytest.param(["//"], id="has too many slashes")],
     )
     def test_it_raises_error_when_repository_id(constructor_arguments: List):
         with pytest.raises(ValueError):

@@ -29,7 +29,8 @@ class AssertGitHubIssue:
     _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
 
     def __init__(self, repository_id: str):
-        """
+        """Constructor.
+
         :param repository_id: GitHub repository ID formatted as "owner/repository name".
         :raises ValueError: When the repository ID is not two slash separated strings.
         """
@@ -67,22 +68,20 @@ class AssertGitHubIssue:
 
         self._cache = TemporaryCache(self._repository_id)
 
-    def _handle_rate_limit_error(self, response: Response):
+    def _handle_rate_limit_error(self, response: Response) -> None:
         headers = response.headers
         if not int(headers.get("X-RateLimit-Remaining", 1)):
             message = response.json()["message"]
             limit = headers.get("X-RateLimit-Limit")
             now = int(time())
-            reset_delay = timedelta(
-                seconds=int(headers.get("X-RateLimit-Reset", now)) - now
-            )
+            reset_delay = timedelta(seconds=int(headers.get("X-RateLimit-Reset", now)) - now)
 
             raise HTTPError(
                 f"{message} Current quota: {limit}. Limit will reset in {reset_delay}."
                 f"{self._rate_limit_exceeded_extra_msg}"
             )
 
-    def _handle_connection_error(self, response: Response):
+    def _handle_connection_error(self, response: Response) -> None:
         self._handle_rate_limit_error(response)
 
         if response.status_code != 200:
@@ -91,10 +90,9 @@ class AssertGitHubIssue:
                 f"HEADERS:\n{response.headers}\nCONTENT:\n{response.content!r}"
             )
 
-    def is_state(
-        self, issue_id: int, expected_state: GitHubIssueState, msg: str = ""
-    ) -> None:
-        """
+    def is_state(self, issue_id: int, expected_state: GitHubIssueState, msg: str = "") -> None:
+        """Checks state of given issue.
+
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
@@ -106,8 +104,7 @@ class AssertGitHubIssue:
         except KeyError:
             # Response documented at https://developer.github.com/v3/issues/
             response: Response = requests.get(
-                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}",
-                auth=self._auth,
+                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}", auth=self._auth
             )
             self._handle_connection_error(response)
 
@@ -124,24 +121,26 @@ class AssertGitHubIssue:
         )
 
     def is_open(self, issue_id: int, msg: str = "") -> None:
-        """
+        """Check if give issue is open.
+
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
         self.is_state(issue_id, GitHubIssueState.open, msg)
 
     def is_closed(self, issue_id: int, msg: str = "") -> None:
-        """
+        """Check if given issue is closed.
+
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
         self.is_state(issue_id, GitHubIssueState.closed, msg)
 
     def current_release(self, current_release_number: Optional[int] = None) -> None:
-        """
-        Checks number of releases of watched repository. Useful when issue is fixed (closed)
-        but not released yet. This assertion will fail when the number of releases does not
-        match.
+        """Checks number of releases of watched repository.
+
+        Useful when issue is fixed (closed) but not released yet. This assertion
+        will fail when the number of releases does not match.
 
         If you don't know how many releases are there at the moment, leave the
         ``current_release_number`` unset. This test will fail and show the
@@ -182,27 +181,20 @@ class AssertGitHubIssue:
         )
 
     @staticmethod
-    def _parse_version_number(string: str, pattern: Pattern) -> AnyVersion:
+    def _parse_version_number(string: str, pattern: Pattern[str]) -> AnyVersion:
         match = pattern.match(string.replace("refs/tags/", ""))
         if not match:
             return parse("")
         return parse(match.group("version"))
 
-    def _ordered_version_numbers(
-        self, tags: List[Dict[str, Any]], pattern: str
-    ) -> List[AnyVersion]:
+    def _ordered_version_numbers(self, tags: List[Dict[str, Any]], pattern: str) -> List[AnyVersion]:
         version_pattern = re.compile(pattern)
-        return sorted(
-            (self._parse_version_number(item["ref"], version_pattern) for item in tags),
-            reverse=True,
-        )
+        return sorted((self._parse_version_number(item["ref"], version_pattern) for item in tags), reverse=True)
 
-    def fixed_in(
-        self, version: Optional[str] = None, pattern: str = "(?P<version>.*)"
-    ) -> None:
-        """
-        Checks if there is a release with higher or equal version number in the watched
-        repository. Useful when issue is fixed (closed), not yet released but the maintainer
+    def fixed_in(self, version: Optional[str] = None, pattern: str = "(?P<version>.*)") -> None:
+        """Checks if there is a release with higher or equal version number in the watched repository.
+
+        Useful when issue is fixed (closed), not yet released but the maintainer
         has stated in which version it will be released. This assertion will fail when the
         expected version or higher is available.
 
@@ -231,9 +223,7 @@ class AssertGitHubIssue:
         releases_url = f"{self._URL_API}/repos/{self._repository_id}/git/refs/tags"
 
         if "(?P<version>" not in pattern:
-            raise ValueError(
-                "The 'pattern' parameter must contain a group '(?P<version>…)'."
-            )
+            raise ValueError("The 'pattern' parameter must contain a group '(?P<version>…)'.")
 
         try:
             latest_version = parse(self._cache["latest_version"])
@@ -246,8 +236,7 @@ class AssertGitHubIssue:
             self._cache["latest_version"] = str(latest_version)
 
         assert version is not None, (
-            f"This test does not have expected version number set. Latest version is "
-            f"'{latest_version}'."
+            f"This test does not have expected version number set. Latest version is " f"'{latest_version}'."
         )
 
         awaiting_version = parse(version)

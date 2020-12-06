@@ -20,14 +20,10 @@ class TestReleaseVersionCheck:
         ],
     )
     def test_it_fails_when_latest_version_is(
-        assert_github_issue_no_cache: AssertGitHubIssue,
-        requests_mock: MagicMock,
-        latest_version: str,
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock, latest_version: str
     ):
         set_git_tags_to(requests_mock, [latest_version])
-        with pytest.raises(
-            AssertionError, match=f"Release '2\\.0\\.0' of.*'{re.escape(latest_version)}'"
-        ):
+        with pytest.raises(AssertionError, match=f"Release '2\\.0\\.0' of.*'{re.escape(latest_version)}'"):
             assert_github_issue_no_cache.fixed_in("2.0.0")
 
     @staticmethod
@@ -35,7 +31,7 @@ class TestReleaseVersionCheck:
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
         set_git_tags_to(requests_mock, ["1.0.0", "3.0.0"])
-        with pytest.raises(AssertionError, match=f"Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
+        with pytest.raises(AssertionError, match="Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
             assert_github_issue_no_cache.fixed_in("2.0.0")
 
     @staticmethod
@@ -51,18 +47,14 @@ class TestReleaseVersionCheck:
         [
             pytest.param("2.0.0-alpha", id="pre-release above expected"),
             pytest.param("2.0.0-alpha.1", id="numbered pre-release above expected"),
-            pytest.param(
-                "2.0.0-alpha+1", id="pre-release and build metadata above expected"
-            ),
+            pytest.param("2.0.0-alpha+1", id="pre-release and build metadata above expected"),
             pytest.param("2.0.0a", id="non-semantic pre-release above expected"),
             pytest.param("2.0.0a0", id="non-semantic numbered pre-release above expected"),
             pytest.param("1.0.0", id="below expected"),
         ],
     )
     def test_it_does_not_fail_when_latest_version_is(
-        assert_github_issue_no_cache: AssertGitHubIssue,
-        requests_mock: MagicMock,
-        latest_version: str,
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock, latest_version: str
     ):
         set_git_tags_to(requests_mock, [latest_version])
         assert_github_issue_no_cache.fixed_in("2.0.0")
@@ -76,9 +68,7 @@ class TestReleaseVersionCheck:
         ],
     )
     def test_it_ignores_invalid_version_tags(
-        assert_github_issue_no_cache: AssertGitHubIssue,
-        requests_mock: MagicMock,
-        version: str,
+        assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock, version: str
     ):
         set_git_tags_to(requests_mock, [version, "1.0.0"])
         assert_github_issue_no_cache.fixed_in("2.0.0")
@@ -89,8 +79,7 @@ class TestReleaseVersionCheck:
     ):
         set_git_tags_to(requests_mock, ["2.0.0"])
         with pytest.raises(
-            AssertionError,
-            match=".*test does not have expected version number set.*version is.*2\\.0\\.0",
+            AssertionError, match=".*test does not have expected version number set.*version is.*2\\.0\\.0"
         ):
             assert_github_issue_no_cache.fixed_in()
 
@@ -98,18 +87,11 @@ class TestReleaseVersionCheck:
     def test_it_parses_out_version_specified_by_pattern(
         assert_github_issue_no_cache: AssertGitHubIssue, requests_mock: MagicMock
     ):
-        set_git_tags_to(
-            requests_mock,
-            ["releases/3.0.0", "1.0.0", "not_a_release_tag", "releases/not_a_version"],
-        )
-        with pytest.raises(AssertionError, match=f"Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
-            assert_github_issue_no_cache.fixed_in(
-                "2.0.0", pattern="releases/(?P<version>.*)"
-            )
+        set_git_tags_to(requests_mock, ["releases/3.0.0", "1.0.0", "not_a_release_tag", "releases/not_a_version"])
+        with pytest.raises(AssertionError, match="Release '2\\.0\\.0' of.*'3\\.0\\.0'"):
+            assert_github_issue_no_cache.fixed_in("2.0.0", pattern="releases/(?P<version>.*)")
 
     @staticmethod
-    def test_it_refuses_pattern_without_a_group(
-        assert_github_issue_no_cache: AssertGitHubIssue
-    ):
+    def test_it_refuses_pattern_without_a_group(assert_github_issue_no_cache: AssertGitHubIssue,):
         with pytest.raises(ValueError, match=".*group.*"):
             assert_github_issue_no_cache.fixed_in("2.0.0", pattern="no_group")

@@ -37,25 +37,17 @@ def assert_github_issue_caching():
 
 class TestCaching:
     @staticmethod
-    def test_closed_issue_check_does_not_fail_when_closed(
-        assert_github_issue_caching: AssertGitHubIssue
-    ):
+    def test_closed_issue_check_does_not_fail_when_closed(assert_github_issue_caching: AssertGitHubIssue,):
         with _timer():
             assert_github_issue_caching.is_closed(CLOSED_ISSUE_NUMBER)
 
     @staticmethod
-    def test_release_check_fails_when_new_releases_available(
-        assert_github_issue_caching: AssertGitHubIssue
-    ):
+    def test_release_check_fails_when_new_releases_available(assert_github_issue_caching: AssertGitHubIssue,):
         with _timer():
             with pytest.raises(AssertionError, match=".*New release of .*"):
                 assert_github_issue_caching.current_release(0)
 
     @staticmethod
-    def test_version_check_fails_when_available(
-        assert_github_issue_caching: AssertGitHubIssue
-    ):
+    def test_version_check_fails_when_available(assert_github_issue_caching: AssertGitHubIssue,):
         with _timer():
-            assert_github_issue_caching.fixed_in(
-                "2.0.0", pattern="releases/(?P<version>.*)"
-            )
+            assert_github_issue_caching.fixed_in("2.0.0", pattern="releases/(?P<version>.*)")

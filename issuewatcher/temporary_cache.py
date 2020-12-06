@@ -5,7 +5,7 @@ import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from tempfile import gettempdir
-from typing import DefaultDict, Iterator, Union
+from typing import DefaultDict, Dict, Iterator, Optional, Tuple, Union
 
 from ujson import dump, load
 
@@ -19,9 +19,7 @@ class TemporaryCache:
         self._project_identifier = project_identifier
 
         try:
-            self._expire_in_seconds = int(
-                os.environ.get(self._ENV_VAR_EXPIRY, self._DEFAULT_EXPIRY)
-            )
+            self._expire_in_seconds = int(os.environ.get(self._ENV_VAR_EXPIRY, self._DEFAULT_EXPIRY))
             if self._expire_in_seconds < 0:
                 raise ValueError("Cache invalidation must be 0 or positive integer.")
         except ValueError:
@@ -36,7 +34,7 @@ class TemporaryCache:
             )
 
     @contextmanager
-    def _session(self, save: bool) -> Iterator[DefaultDict]:
+    def _session(self, save: bool) -> Iterator[DefaultDict[str, Dict[Union[str, int], Tuple[str, int]]]]:
         try:
             with open(self._TEMP_FILE_NAME, "r") as temp_file:
                 cache = load(temp_file)
@@ -53,10 +51,10 @@ class TemporaryCache:
                 with open(self._TEMP_FILE_NAME, "w") as temp_file:
                     dump(cache, temp_file)
 
-    def __setitem__(self, key: Union[str, int], value: str):
+    def __setitem__(self, key: Union[str, int], value: str) -> None:
         if self._expire_in_seconds:
             with self._session(save=True) as cache:
-                cache[self._project_identifier][key] = [value, int(time.time())]
+                cache[self._project_identifier][key] = (value, int(time.time()))
 
     def __getitem__(self, key: Union[str, int]) -> str:
         if not self._expire_in_seconds:
@@ -74,12 +72,12 @@ class TemporaryCache:
 
         return value
 
-    def get(self, key: Union[str, int], default=None):
+    def get(self, key: Union[str, int], default: Optional[str] = None) -> Optional[str]:
         try:
             return self[key]
         except KeyError:
             return default
 
-    def clear(self):
+    def clear(self) -> None:
         with self._session(save=True) as cache:
             cache.clear()
