@@ -83,16 +83,13 @@ jobs: # A basic unit of work in a run
   deploy_library:
     working_directory: << pipeline.parameters.working_directory >>
     docker: # run the steps with Docker
-      - image: circleci/ruby:2.6.5
+      - image: circleci/python:<< pipeline.parameters.python_version >>
     steps:
       - attach_workspace:
           at: << pipeline.parameters.working_directory >>
       - run:
-          name: Build package
-          command: python setup.py sdist bdist_wheel
-      - run:
           name: Upload to pypi
-          command: pipenv run twine upload dist/*
+          command: pipenv run inv upload
 workflows:
   version: 2
   all_pipelines:
@@ -103,12 +100,13 @@ workflows:
             parameters:
               version: ["3.6", "3.7", "3.8"]
       - build:
-          name: Packages build
+          name: Build
           requires:
             - test
       - deploy_library:
+          name: Deploy to pypi
           requires:
-            - Packages build
+            - Build
 #          filters:
 #            branches:
 #              only: master

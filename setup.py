@@ -25,6 +25,7 @@ setuptools.setup(
             app_name=APPLICATION_NAME, description=DESCRIPTION
         )
     ),
+    long_description_content_type="text/markdown",
     # https://pypi.org/classifiers/
     classifiers=[
         "Development Status :: 5 - Production/Stable",

@@ -14,4 +14,7 @@ def build(ctx):
     print("Cleanup the 'build' directory")
     shutil.rmtree("build", ignore_errors=True)
 
-    ctx.run("python setup.py bdist_wheel", pty=True, env={"PYTHONPATH": PROJECT_INFO.source_directory})
+    ctx.run("python setup.py sdist bdist_wheel", pty=True, env={"PYTHONPATH": PROJECT_INFO.source_directory})
+
+    print_header("Check PyPI description", icon="👀", level=2)
+    ctx.run("twine check dist/*")

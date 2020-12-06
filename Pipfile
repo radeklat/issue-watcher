@@ -20,6 +20,7 @@ typed_ast = "*"  # for black
 dataclasses = {version = "*", markers = "python_version < '3.7'"}
 importlib_metadata = {version = "*", markers = "python_version < '3.8'"}
 zipp = {version = "*", markers = "python_version < '3.8'"}
+twine = "*"
 
 [packages]
 requests="*"

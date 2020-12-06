@@ -11,6 +11,7 @@ from invoke import Collection
 
 from tasks.format import run_format
 from tasks.lint import lint, lint_pycodestyle, lint_docstyle, lint_pylint
+from tasks.upload import upload
 from tasks.utils import switch_python_version
 from tasks.test import coverage_open, coverage_report, test, test_unit
 from tasks.typecheck import typecheck
@@ -35,4 +36,5 @@ namespace.add_task(coverage_open)
 namespace.add_task(verify_all)
 
 namespace.add_task(build)
+namespace.add_task(upload)
 namespace.add_task(switch_python_version)
