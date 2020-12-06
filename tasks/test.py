@@ -3,8 +3,9 @@
 import re
 import shutil
 import webbrowser
+from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 from invoke import Exit, task
@@ -43,22 +44,25 @@ class TestConfiguration:
         return f'export COVERAGE_FILE="{self.coverage_dat}"'
 
 
-class TestType:
-    UNIT: TestConfiguration = TestConfiguration("unit")
-    INTEGRATION: TestConfiguration = TestConfiguration("integration")
+class TestType(Enum):
+    UNIT = TestConfiguration("unit")
+    INTEGRATION = TestConfiguration("integration")
 
 
-def _run_tests(ctx, test_type: TestConfiguration, paths: List[Path]):
+def _run_tests(ctx, test_type: TestType, path: Optional[List[str]] = None):
     """Execute the tests for a given test type."""
     print_header(f"️Running {test_type.name} tests️", icon="🔎🐛")
     ensure_reports_dir()
+
+    paths = to_pathlib_path(path, [test_type.value.directory])
+
     ctx.run(
         f"""
-        {test_type.exports}
+        {test_type.value.exports}
         export PYTHONPATH="$PYTHONPATH:{PROJECT_INFO.source_directory}"
         pytest \
           --cov={PROJECT_INFO.source_directory} --cov-report="" --cov-branch \
-          --junitxml={test_type.test_report_xml} -vv \
+          --junitxml={test_type.value.test_report_xml} -vv \
           {paths_to_str(paths)}
         """,
         pty=True,
@@ -73,7 +77,7 @@ def test_unit(ctx, path=None):
         ctx (invoke.Context): Invoke context.
         path (Optional[List[str]]): Path override. Run tests only on given paths.
     """
-    _run_tests(ctx, TestType.UNIT, to_pathlib_path(path, [TestType.UNIT.directory]))
+    _run_tests(ctx, TestType.UNIT, path)
 
 
 @task(iterable=["path"])
@@ -84,7 +88,7 @@ def test_integration(ctx, path=None):
         ctx (invoke.Context): Invoke context.
         path (Optional[List[str]]): Path override. Run tests only on given paths.
     """
-    _run_tests(ctx, TestType.INTEGRATION, to_pathlib_path(path, [TestType.INTEGRATION.directory]))
+    _run_tests(ctx, TestType.INTEGRATION, path)
 
 
 def get_total_coverage(ctx, coverage_dat: Path) -> str:
@@ -112,14 +116,15 @@ def coverage_report(ctx):
     ensure_reports_dir()
 
     coverage_files = []  # we'll make a copy because `combine` will erase them
-    for test_type in [TestType.UNIT, TestType.INTEGRATION]:
-        if not test_type.coverage_dat.exists():
-            cprint(f"Could not find coverage dat file for {test_type.name} tests: {test_type.coverage_dat}", "yellow")
+    for test_type in TestType.__members__.values():
+        test_conf = test_type.value
+        if not test_conf.coverage_dat.exists():
+            cprint(f"Could not find coverage dat file for {test_conf.name} tests: {test_conf.coverage_dat}", "yellow")
         else:
-            print(f"{test_type.name.title()} test coverage: {get_total_coverage(ctx, test_type.coverage_dat)}")
+            print(f"{test_conf.name.title()} test coverage: {get_total_coverage(ctx, test_conf.coverage_dat)}")
 
-            temp_copy = test_type.coverage_dat.with_name(test_type.coverage_dat.name.replace(".dat", "-copy.dat"))
-            shutil.copy(test_type.coverage_dat, temp_copy)
+            temp_copy = test_conf.coverage_dat.with_name(test_conf.coverage_dat.name.replace(".dat", "-copy.dat"))
+            shutil.copy(test_conf.coverage_dat, temp_copy)
             coverage_files.append(str(temp_copy))
 
     ctx.run(
