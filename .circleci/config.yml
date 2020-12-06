@@ -108,6 +108,6 @@ workflows:
           context: issue watcher
           requires:
             - Build
-#          filters:
-#            branches:
-#              only: master
+          filters:
+            branches:
+              only: master
