@@ -17,18 +17,11 @@ def noop(_: AssertGitHubIssue):
 class TestAuthentication:
     @staticmethod
     def _init_with_user_name_token_and_assert(
-        requests_mock: MagicMock,
-        username: str,
-        token: str,
-        assertion: Callable[[AssertGitHubIssue], None] = noop,
+        requests_mock: MagicMock, username: str, token: str, assertion: Callable[[AssertGitHubIssue], None] = noop
     ):
         with patch.dict(
             "os.environ",
-            {
-                "GITHUB_USER_NAME": username,
-                "GITHUB_PERSONAL_ACCESS_TOKEN": token,
-                "CACHE_INVALIDATION_IN_SECONDS": "0",
-            },
+            {"GITHUB_USER_NAME": username, "GITHUB_PERSONAL_ACCESS_TOKEN": token, "CACHE_INVALIDATION_IN_SECONDS": "0"},
         ):
             set_issue_state(requests_mock, "open")
             assert_github_issue = AssertGitHubIssue(REPOSITORY_ID)
@@ -47,21 +40,14 @@ class TestAuthentication:
         try:
             warnings.simplefilter("ignore", category=RuntimeWarning)
             self._init_with_user_name_token_and_assert(
-                requests_mock,
-                username,
-                token,
-                lambda _: requests_mock.get.assert_called_with(ANY, auth=None),
+                requests_mock, username, token, lambda _: requests_mock.get.assert_called_with(ANY, auth=None)
             )
         finally:
             warnings.resetwarnings()
 
-    def test_it_displays_warning_when_partial_credentials_supplied(
-        self, requests_mock: MagicMock
-    ):
+    def test_it_displays_warning_when_partial_credentials_supplied(self, requests_mock: MagicMock):
         with pytest.warns(RuntimeWarning, match=".*improperly configured.*"):
-            self._init_with_user_name_token_and_assert(
-                requests_mock, "some username no token", ""
-            )
+            self._init_with_user_name_token_and_assert(requests_mock, "some username no token", "")
 
     @pytest.mark.parametrize(
         "username,token",
@@ -70,9 +56,7 @@ class TestAuthentication:
             pytest.param("some user", "some token", id="both user and token supplier"),
         ],
     )
-    def test_it_displays_no_warnings_when(
-        self, requests_mock: MagicMock, username: str, token: str
-    ):
+    def test_it_displays_no_warnings_when(self, requests_mock: MagicMock, username: str, token: str):
         with warnings.catch_warnings(record=True) as warnings_list:
             self._init_with_user_name_token_and_assert(requests_mock, username, token)
             assert not warnings_list
@@ -81,9 +65,7 @@ class TestAuthentication:
         credentials = ("some username", "some token")
 
         self._init_with_user_name_token_and_assert(
-            requests_mock,
-            *credentials,
-            assertion=lambda _: requests_mock.get.assert_called_with(ANY, auth=credentials),
+            requests_mock, *credentials, assertion=lambda _: requests_mock.get.assert_called_with(ANY, auth=credentials)
         )
 
     def test_it_is_suggested_when_api_rate_exceeded(self, requests_mock: MagicMock):

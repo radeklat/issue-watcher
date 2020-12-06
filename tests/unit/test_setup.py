@@ -1,18 +1,17 @@
 from os.path import abspath, dirname, isfile, join
 from shutil import rmtree
-from subprocess import DEVNULL, call
+from subprocess import call
 
 import pytest
 
-from issuewatcher.constants import __version__ as app_version, APPLICATION_NAME
+from issuewatcher.constants import APPLICATION_NAME, __version__ as app_version
 
 SOURCES_ROOT = abspath(join(dirname(__file__), "..", ".."))
 
 UNDERSCORED_APPLICATION_NAME = APPLICATION_NAME.replace("-", "_")
 
 BUILD_ARTEFACTS = [
-    join(SOURCES_ROOT, folder)
-    for folder in ["dist", "build", UNDERSCORED_APPLICATION_NAME + ".egg-info"]
+    join(SOURCES_ROOT, folder) for folder in ["dist", "build", UNDERSCORED_APPLICATION_NAME + ".egg-info"]
 ]
 
 # pylint: disable=redefined-outer-name
@@ -28,9 +27,7 @@ def build_return_code():
     cleanup_build_artefacts()
 
     try:
-        yield call(
-            ["python", "setup.py", "sdist", "bdist_wheel"], stdout=DEVNULL, stderr=DEVNULL
-        )
+        yield call(["inv", "build"])
     finally:
         cleanup_build_artefacts()
 

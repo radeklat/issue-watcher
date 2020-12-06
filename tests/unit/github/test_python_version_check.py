@@ -25,15 +25,9 @@ class TestPythonSupportChecks:
     @pytest.mark.parametrize(
         "python_version_mock,expectation",
         [
-            pytest.param(
-                "3.5.0", pytest.raises(OSError), id="OSError when Python version is too low"
-            ),
-            pytest.param(
-                "3.6.0", ExitStack(), id="nothing when Python version is in range"
-            ),
-            pytest.param(
-                "3.9.0", pytest.warns(Warning), id="Warning when Python version is too high"
-            ),
+            pytest.param("3.5.0", pytest.raises(OSError), id="OSError when Python version is too low"),
+            pytest.param("3.6.0", ExitStack(), id="nothing when Python version is in range"),
+            pytest.param("3.9.0", pytest.warns(Warning), id="Warning when Python version is too high"),
         ],
         indirect=["python_version_mock"],
     )

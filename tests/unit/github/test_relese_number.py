@@ -37,8 +37,6 @@ class TestReleaseNumberCheck:
     ):
         set_number_of_releases_to(requests_mock, 1)
         with pytest.raises(
-            AssertionError,
-            match=".*test does not have any number of releases set.*"
-            "number of releases is '[0-9]+'",
+            AssertionError, match=".*test does not have any number of releases set.*" "number of releases is '[0-9]+'"
         ):
             assert_github_issue_no_cache.current_release()

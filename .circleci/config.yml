@@ -1,22 +1,124 @@
 version: 2.1
 
 orbs:
-  python: circleci/python@1.2.1
+  slack: circleci/slack@3.4.2
 
-jobs:
-  build-and-test:
-    executor: python/default
+parameters:
+  working_directory:
+    type: string
+    default: ~/issuewatcher
+  python_version:
+    type: string
+    default: "3.6"
+
+jobs: # A basic unit of work in a run
+  test:
+    working_directory: << pipeline.parameters.working_directory >>
+    parameters:
+      version:
+        type: string
+    docker:
+      - image: circleci/python:<< parameters.version >>
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
     steps:
       - checkout
-      - python/install-packages:
-          pkg-manager: pip
-      - python/install-packages:
-          pip-dependency-file: requirements-test.txt
-          pkg-manager: pip
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python<< parameters.version >>/site-packages
+      - restore_cache:
+          key: issuewatcher-<< parameters.version >>-{{ checksum "Pipfile.lock" }}
       - run:
-          command: bash test.sh --noinstall --no-update --novirtualenv --strict --no-format
-          name: Run tests
+          name: Install dev libraries
+          command: |
+            pip install --upgrade pip &&
+            pip install pipenv &&
+            pipenv install --dev --deploy
+      - run:
+          name: Format check
+          command: pipenv run inv format --check
+      - run:
+          name: Type check
+          command: pipenv run inv typecheck
+      - run:
+          name: Linters
+          command: pipenv run inv lint
+      - save_cache:
+          key: issuewatcher-<< parameters.version >>-{{ checksum "Pipfile.lock" }}
+          paths:
+            - ".venv"
+            - "/usr/local/bin"
+            - "/usr/local/lib/python<< parameters.version >>/site-packages"
+      - run:
+          name: Unit tests
+          command: |
+            pipenv run inv test-unit
+      - run:
+          name: Integration tests
+          command: |
+            pipenv run inv test-integration
+      - run:
+          name: Build coverage report
+          command: pipenv run inv coverage-report
+      - run:
+          name: Upload coverage reports to Codecov
+          #
+          command: |
+            [[ "${CIRCLE_BRANCH}" == "master" ]] && BASE_COMMIT_SHA=$(git rev-parse HEAD~1) || BASE_COMMIT_SHA=$(git merge-base ${CIRCLE_BRANCH} origin/master)
+            bash <(curl -s https://codecov.io/bash) -N ${BASE_COMMIT_SHA} -f reports/unit-test-report.xml -f reports/integration-test-report.xml -F $(echo << parameters.version >> | tr "." "_")
+      - store_artifacts:
+          path: reports/coverage-report
+      - store_test_results:
+          path: reports
+  build:
+    working_directory: << pipeline.parameters.working_directory >>
+    docker: # run the steps with Docker
+      - image: circleci/python:<< pipeline.parameters.python_version >>
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+    steps:
+      - checkout
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
+      - restore_cache:
+          key: issuewatcher-<< pipeline.parameters.python_version >>-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: Build library
+          command: |
+            pip install pipenv &&
+            pipenv run inv build
+      - persist_to_workspace:
+          root: << pipeline.parameters.working_directory >>
+          paths: .
+
+  deploy_library:
+    working_directory: << pipeline.parameters.working_directory >>
+    docker: # run the steps with Docker
+      - image: circleci/python:<< pipeline.parameters.python_version >>
+    steps:
+      - attach_workspace:
+          at: << pipeline.parameters.working_directory >>
+      - run:
+          name: Upload to pypi
+          command: pipenv run inv upload
 workflows:
-  main:
+  version: 2
+  all_pipelines:
     jobs:
-      - build-and-test
+      - test:
+          context: issue watcher
+          name: Python << matrix.version >> tests
+          matrix:
+            parameters:
+              version: ["3.6", "3.7", "3.8"]
+      - build:
+          name: Build
+          requires:
+            - test
+      - deploy_library:
+          name: Deploy to pypi
+          context: issue watcher
+          requires:
+            - Build
+          filters:
+            branches:
+              only: master

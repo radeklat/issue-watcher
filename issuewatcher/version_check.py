@@ -10,9 +10,9 @@ from issuewatcher.constants import (
 )
 
 
-def check_python_support():
-    """
-    Shows warning when Python version is too high.
+def check_python_support() -> None:
+    """Shows warning when Python version is too high.
+
     :raises OSError: When Python version is too low.
     """
     current_version = VersionInfo.parse(platform.python_version())
