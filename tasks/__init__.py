@@ -13,7 +13,7 @@ from tasks.format import run_format
 from tasks.lint import lint, lint_pycodestyle, lint_docstyle, lint_pylint
 from tasks.upload import upload
 from tasks.utils import switch_python_version
-from tasks.test import coverage_open, coverage_report, test, test_unit
+from tasks.test import coverage_open, coverage_report, test, test_integration, test_unit
 from tasks.typecheck import typecheck
 from tasks.verify_all import verify_all
 from tasks.build import build
@@ -29,6 +29,7 @@ namespace.add_task(lint_pycodestyle)
 namespace.add_task(lint_docstyle)
 
 namespace.add_task(test_unit)
+namespace.add_task(test_integration)
 namespace.add_task(test)
 namespace.add_task(coverage_report)
 namespace.add_task(coverage_open)

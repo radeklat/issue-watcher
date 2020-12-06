@@ -22,6 +22,7 @@ importlib_metadata = {version = "*", markers = "python_version < '3.8'"}
 zipp = {version = "*", markers = "python_version < '3.8'"}
 twine = "*"
 pipfile = "==0.0.2"
+pytest-dotenv = "==0.5.2"
 
 [packages]
 requests="*"

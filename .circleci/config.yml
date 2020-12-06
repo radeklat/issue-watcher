@@ -53,6 +53,10 @@ jobs: # A basic unit of work in a run
           command: |
             pipenv run inv test-unit
       - run:
+          name: Integration tests
+          command: |
+            pipenv run inv test-integration
+      - run:
           name: Build coverage report
           command: pipenv run inv coverage-report
       - store_artifacts:

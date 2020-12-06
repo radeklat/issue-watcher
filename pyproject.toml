@@ -16,5 +16,6 @@ exclude = '''
 '''
 
 [tool.pytest.ini_options]
+python_functions = ["test_*", "should_*"]
 testpaths = "tests/unit"
 junit_family = "xunit2"

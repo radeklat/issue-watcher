@@ -3,11 +3,10 @@
 import re
 import shutil
 import webbrowser
-from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import List
 
+from dataclasses import dataclass
 from invoke import Exit, task
 from termcolor import cprint
 
@@ -25,7 +24,10 @@ class TestConfiguration:
     """Configuration for a particular suite of tests; e.g., integration vs unit."""
 
     name: str
-    tests_directory: Path
+
+    @property
+    def directory(self) -> Path:
+        return PROJECT_INFO.tests_directory / self.name
 
     @property
     def coverage_dat(self) -> Path:
@@ -41,22 +43,22 @@ class TestConfiguration:
         return f'export COVERAGE_FILE="{self.coverage_dat}"'
 
 
-class TestType(Enum):
-    UNIT = TestConfiguration("unit", PROJECT_INFO.unit_tests_directory)
+class TestType:
+    UNIT: TestConfiguration = TestConfiguration("unit")
+    INTEGRATION: TestConfiguration = TestConfiguration("integration")
 
 
-def _run_tests(ctx, test_type: TestType, paths: List[Path]):
+def _run_tests(ctx, test_type: TestConfiguration, paths: List[Path]):
     """Execute the tests for a given test type."""
-    print_header(f"️Running {test_type.value.name} tests️", icon="🔎🐛")
+    print_header(f"️Running {test_type.name} tests️", icon="🔎🐛")
     ensure_reports_dir()
-    params: TestConfiguration = test_type.value
     ctx.run(
         f"""
-        {params.exports}
+        {test_type.exports}
         export PYTHONPATH="$PYTHONPATH:{PROJECT_INFO.source_directory}"
         pytest \
           --cov={PROJECT_INFO.source_directory} --cov-report="" --cov-branch \
-          --junitxml={params.test_report_xml} -vv \
+          --junitxml={test_type.test_report_xml} -vv \
           {paths_to_str(paths)}
         """,
         pty=True,
@@ -71,7 +73,18 @@ def test_unit(ctx, path=None):
         ctx (invoke.Context): Invoke context.
         path (Optional[List[str]]): Path override. Run tests only on given paths.
     """
-    _run_tests(ctx, TestType.UNIT, to_pathlib_path(path, [PROJECT_INFO.unit_tests_directory]))
+    _run_tests(ctx, TestType.UNIT, to_pathlib_path(path, [TestType.UNIT.directory]))
+
+
+@task(iterable=["path"])
+def test_integration(ctx, path=None):
+    """Run integration tests.
+
+    Args:
+        ctx (invoke.Context): Invoke context.
+        path (Optional[List[str]]): Path override. Run tests only on given paths.
+    """
+    _run_tests(ctx, TestType.INTEGRATION, to_pathlib_path(path, [TestType.INTEGRATION.directory]))
 
 
 def get_total_coverage(ctx, coverage_dat: Path) -> str:
@@ -99,17 +112,14 @@ def coverage_report(ctx):
     ensure_reports_dir()
 
     coverage_files = []  # we'll make a copy because `combine` will erase them
-    for test_enum in TestType.__members__.values():
-        tests_config: TestConfiguration = test_enum.value
-        if not tests_config.coverage_dat.exists():
-            cprint(
-                f"Could not find coverage dat file for {tests_config.name} tests: {tests_config.coverage_dat}", "yellow"
-            )
+    for test_type in [TestType.UNIT, TestType.INTEGRATION]:
+        if not test_type.coverage_dat.exists():
+            cprint(f"Could not find coverage dat file for {test_type.name} tests: {test_type.coverage_dat}", "yellow")
         else:
-            print(f"{tests_config.name.title()} test coverage: {get_total_coverage(ctx, tests_config.coverage_dat)}")
+            print(f"{test_type.name.title()} test coverage: {get_total_coverage(ctx, test_type.coverage_dat)}")
 
-            temp_copy = tests_config.coverage_dat.with_name(tests_config.coverage_dat.name.replace(".dat", "-copy.dat"))
-            shutil.copy(tests_config.coverage_dat, temp_copy)
+            temp_copy = test_type.coverage_dat.with_name(test_type.coverage_dat.name.replace(".dat", "-copy.dat"))
+            shutil.copy(test_type.coverage_dat, temp_copy)
             coverage_files.append(str(temp_copy))
 
     ctx.run(
@@ -127,7 +137,7 @@ def coverage_report(ctx):
     )
 
 
-@task(pre=[test_unit, coverage_report], name="test-all")
+@task(pre=[test_unit, test_integration, coverage_report], name="test-all")
 def test(_ctx):
     """Run all tests, and generate coverage report."""
 
