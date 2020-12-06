@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto  # auto compares coverage to the previous base commit
+
+comment:  # See https://docs.codecov.io/docs/pull-request-comments#branches
+  layout: "files, flags"
+  branches:
+    - "master"  # don't post coverage comments on merges to non-master
+
+codecov:
+  archive:
+    uploads: false

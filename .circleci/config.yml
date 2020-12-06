@@ -59,12 +59,15 @@ jobs: # A basic unit of work in a run
       - run:
           name: Build coverage report
           command: pipenv run inv coverage-report
-      - run:
-          name: Upload coverage reports to Codecov
-          #
-          command: |
-            [[ "${CIRCLE_BRANCH}" == "master" ]] && BASE_COMMIT_SHA=$(git rev-parse HEAD~1) || BASE_COMMIT_SHA=$(git merge-base ${CIRCLE_BRANCH} origin/master)
-            bash <(curl -s https://codecov.io/bash) -N ${BASE_COMMIT_SHA} -f reports/unit-test-report.xml -f reports/integration-test-report.xml
+      - when:
+          condition:
+            equal: [python<< parameters.version >>, "3.8"]
+          steps:
+            - run:
+                name: Upload coverage reports to Codecov
+                command: |
+                  [[ "${CIRCLE_BRANCH}" == "master" ]] && BASE_COMMIT_SHA=$(git rev-parse HEAD~1) || BASE_COMMIT_SHA=$(git merge-base ${CIRCLE_BRANCH} origin/master)
+                  bash <(curl -s https://codecov.io/bash) -N ${BASE_COMMIT_SHA} -f reports/unit-test-report.xml -f reports/integration-test-report.xml
       - store_artifacts:
           path: reports/coverage-report
       - store_test_results:
