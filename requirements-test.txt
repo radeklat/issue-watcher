@@ -1,8 +1,0 @@
-coverage
-pylint==2.4.4
-mypy
-codecov
-pytest
-pytest-cov
-black
-pre-commit
