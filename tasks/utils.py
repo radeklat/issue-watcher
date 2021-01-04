@@ -97,4 +97,4 @@ def switch_python_version(ctx, version):
         version (str): Desired Python version. You can use only MAJOR.MINOR (for example 3.6).
     """
     print_header(f"Switching to Python {version}", icon="🐍")
-    ctx.run(f"deactivate; git clean -fxd .venv && pipenv sync --python {version} -d", pty=True)
+    ctx.run(f"source deactivate; git clean -fxd .venv && pipenv sync --python {version} -d", pty=True)
