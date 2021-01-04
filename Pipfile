@@ -20,6 +20,7 @@ typed_ast = "*"  # for black
 dataclasses = {version = "*", markers = "python_version < '3.7'"}
 importlib_metadata = {version = "*", markers = "python_version < '3.8'"}
 zipp = {version = "*", markers = "python_version < '3.8'"}
+typing_extensions = {version = "*", markers = "python_version <= '3.8'"}  # mypy still requires it in 3.8
 twine = "*"
 pipfile = "==0.0.2"
 pytest-dotenv = "==0.5.2"

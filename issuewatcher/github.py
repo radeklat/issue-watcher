@@ -4,10 +4,10 @@ import warnings
 from datetime import timedelta
 from enum import Enum
 from time import time
-from typing import Any, Dict, List, Optional, Pattern, Tuple, Union
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import requests
-from packaging.version import LegacyVersion, Version, parse
+from packaging.version import InvalidVersion, Version
 from requests import HTTPError, Response
 
 from issuewatcher.temporary_cache import TemporaryCache
@@ -19,14 +19,12 @@ class GitHubIssueState(Enum):
     closed = "closed"
 
 
-AnyVersion = Union[Version, LegacyVersion]
-
-
 class AssertGitHubIssue:
     _URL_API: str = "https://api.github.com"
     _URL_WEB: str = "https://github.com"
     _ENV_VAR_USERNAME = "GITHUB_USER_NAME"
     _ENV_VAR_TOKEN = "GITHUB_PERSONAL_ACCESS_TOKEN"
+    _NO_VERSION_AVAILABLE = ""
 
     def __init__(self, repository_id: str):
         """Constructor.
@@ -181,15 +179,25 @@ class AssertGitHubIssue:
         )
 
     @staticmethod
-    def _parse_version_number(string: str, pattern: Pattern[str]) -> AnyVersion:
+    def _parse_version_number(string: str, pattern: Pattern[str]) -> Optional[Version]:
         match = pattern.match(string.replace("refs/tags/", ""))
         if not match:
-            return parse("")
-        return parse(match.group("version"))
+            return None
+        try:
+            return Version(match.group("version"))
+        except InvalidVersion:
+            return None
 
-    def _ordered_version_numbers(self, tags: List[Dict[str, Any]], pattern: str) -> List[AnyVersion]:
+    def _ordered_version_numbers(self, tags: List[Dict[str, Any]], pattern: str) -> List[Version]:
         version_pattern = re.compile(pattern)
-        return sorted((self._parse_version_number(item["ref"], version_pattern) for item in tags), reverse=True)
+        return sorted(
+            (
+                version
+                for version in (self._parse_version_number(item["ref"], version_pattern) for item in tags)
+                if version is not None
+            ),
+            reverse=True,
+        )
 
     def fixed_in(self, version: Optional[str] = None, pattern: str = "(?P<version>.*)") -> None:
         """Checks if there is a release with higher or equal version number in the watched repository.
@@ -226,20 +234,23 @@ class AssertGitHubIssue:
             raise ValueError("The 'pattern' parameter must contain a group '(?P<version>…)'.")
 
         try:
-            latest_version = parse(self._cache["latest_version"])
+            latest_version = Version(self._cache["latest_version"])
             pass  # pylint: disable=unnecessary-pass; this line should be covered
         except (KeyError, ValueError):
             response: Response = requests.get(releases_url, auth=self._auth)
             self._handle_connection_error(response)
 
-            latest_version = self._ordered_version_numbers(response.json(), pattern)[0]
+            versions = self._ordered_version_numbers(response.json(), pattern)
+            assert versions, "No tags with a valid semantic versions were found in the repository."
+            latest_version = versions[0]
+
             self._cache["latest_version"] = str(latest_version)
 
-        assert version is not None, (
-            f"This test does not have expected version number set. Latest version is " f"'{latest_version}'."
-        )
+        assert (
+            version is not None
+        ), f"This test does not have expected version number set. Latest version is '{latest_version}'."
 
-        awaiting_version = parse(version)
+        awaiting_version = Version(version)
 
         assert latest_version < awaiting_version, (
             f"Release '{version}' of '{self._repository_id}' is available. Latest version "
