@@ -19,3 +19,8 @@ exclude = '''
 python_functions = ["test_*", "should_*"]
 testpaths = "tests/unit"
 junit_family = "xunit2"
+
+# Structure: https://docs.pytest.org/en/stable/warnings.html
+# Values:    https://docs.python.org/3/library/warnings.html#describing-warning-filters
+#            action:message:category:module:line
+filterwarnings = []
