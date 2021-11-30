@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from requests import HTTPError
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 from tests.unit.github.constants import ISSUE_NUMBER, REPOSITORY_ID
 from tests.unit.github.mocking import set_issue_state, set_limit_exceeded
 

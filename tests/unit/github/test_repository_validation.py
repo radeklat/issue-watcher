@@ -2,7 +2,7 @@ from typing import List
 
 import pytest
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 
 # False positive caused by pytest fixtures and class use
 # pylint: disable=too-few-public-methods

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from issuewatcher import AssertGitHubIssue, GitHubIssueState
+from issue_watcher import AssertGitHubIssue, GitHubIssueState
 from tests.unit.github.constants import ISSUE_NUMBER
 from tests.unit.github.mocking import set_issue_state
 
@@ -12,8 +12,8 @@ class TestStateCheck:
     @pytest.mark.parametrize(
         "expected_state,returned_state",
         [
-            pytest.param(GitHubIssueState.open, "closed", id="open closed"),
-            pytest.param(GitHubIssueState.closed, "open", id="closed open"),
+            pytest.param(GitHubIssueState.OPEN, "closed", id="open closed"),
+            pytest.param(GitHubIssueState.CLOSED, "open", id="closed open"),
         ],
     )
     def test_it_fails_on_non_matching_state(
@@ -31,8 +31,8 @@ class TestStateCheck:
     @pytest.mark.parametrize(
         "expected_state,returned_state",
         [
-            pytest.param(GitHubIssueState.open, "open", id="open"),
-            pytest.param(GitHubIssueState.closed, "closed", id="closed"),
+            pytest.param(GitHubIssueState.OPEN, "open", id="open"),
+            pytest.param(GitHubIssueState.CLOSED, "closed", id="closed"),
         ],
     )
     def test_it_does_not_fail_on_matching_state(
@@ -46,7 +46,7 @@ class TestStateCheck:
 
 
 def _fail_open_state_check(assert_github_issue: AssertGitHubIssue, req_mock: MagicMock, msg: str = ""):
-    set_issue_state(req_mock, GitHubIssueState.closed.value)
+    set_issue_state(req_mock, GitHubIssueState.CLOSED.value)
     assert_github_issue.is_open(ISSUE_NUMBER, msg)
 
 

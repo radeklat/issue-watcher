@@ -14,96 +14,114 @@ Types of changes are:
 
 ## [Unreleased]
 
+### Added
+
+- Support for Python 3.9 and 3.10
+
+### Changed
+
+- **Breaking:** `github.GitHubIssueState` states `open` and `closed` to `OPEN` and `CLOSED`.
+- **Breaking:** Top level import renamed from `issuewatcher` to `issue_watcher` to match the package name.
+
+### Removed
+
+- **Breaking:** Support for Python 3.6
+
+### Fixed
+
+- Update dependencies.
+- Missing explicit encoding in `open`.
+
 ## [3.0.0] - 2021-01-04
 
 ### Changed
-* `AssertGitHubIssue.fixed_in()` will fail with `AssertionError` when list of versions from GitHub doesn't return any valid semantic versions.
-* 
+- `AssertGitHubIssue.fixed_in()` will fail with `AssertionError` when list of versions from GitHub doesn't return any valid semantic versions.
+
 ### Fixed
-* DeprecationError about soon to be removed `LegacyVersion` from `packaging`
+- DeprecationError about soon to be removed `LegacyVersion` from `packaging`
 
 ## [2.3.0] - 2020-06-04
 
 ### Added
-* Option to check release numbers with `AssertGitHubIssue.fixed_in()`.
+- Option to check release numbers with `AssertGitHubIssue.fixed_in()`.
 
 ## [2.2.4] - 2020-05-06
 
 ### Fixed
-* Deprecation in the `semver` library.
+- Deprecation in the `semver` library.
 
 ## [2.2.3] - 2020-03-25
 
 ### Fixed
-* Fixed version of pylint until testing script is compatible with 2.5.0+
+- Fixed version of pylint until testing script is compatible with 2.5.0+
 
 ## [2.2.2] - 2020-03-25
 
 ### Fixed
-* Annotated package as typed according to [PEP 561](https://www.python.org/dev/peps/pep-0561/).
+- Annotated package as typed according to [PEP 561](https://www.python.org/dev/peps/pep-0561/).
 
 ## [2.2.1] - 2019-11-08
 
 ### Changed
-* Verified support for Python 3.8 which required couple of constants to be changed.
+- Verified support for Python 3.8 which required couple of constants to be changed.
 
 ## [2.2.0] - 2019-10-20 
 
 ### Added
-* Python version check to warn/fail for unsupported Python versions.
+- Python version check to warn/fail for unsupported Python versions.
 
 ## [2.1.1] - 2019-10-19
 
 ### Fixed
-* New mypy issue with bytes strings in format function. 
+- New mypy issue with bytes strings in format function.
 
 ## [2.1.0] - 2019-10-06
 
 ### Added
-* `AssertGitHubIssue.current_release()` shows current number of releases in failing test when no number given.
+- `AssertGitHubIssue.current_release()` shows current number of releases in failing test when no number given.
 
 ## [2.0.0] - 2019-10-06
 
 ### Added
-* Compatibility with pytest
-* Repository ID supplied through constructor as a single string
+- Compatibility with pytest
+- Repository ID supplied through constructor as a single string
 
 ### Changed
-* Tests rewritten from unittest to pytest
-* GitHub issue class and assertions drop duplicate or unnecessary information for their name:
-    * `GitHubIssueTestCase` -> `AssertGitHubIssue`
-    * `assert_github_issue_is_state` -> `is_state`
-    * `assert_github_issue_is_open` -> `is_open`
-    * `assert_github_issue_is_closed` -> `is_closed`
-    * `assert_no_new_release_is_available` -> `current_release`
-* Method parameter `issue_number` renamed to `issue_id` in `is_state()`, `is_open()` and `is_closed()`.
+- Tests rewritten from unittest to pytest
+- GitHub issue class and assertions drop duplicate or unnecessary information for their name:
+    - `GitHubIssueTestCase` -> `AssertGitHubIssue`
+    - `assert_github_issue_is_state` -> `is_state`
+    - `assert_github_issue_is_open` -> `is_open`
+    - `assert_github_issue_is_closed` -> `is_closed`
+    - `assert_no_new_release_is_available` -> `current_release`
+- Method parameter `issue_number` renamed to `issue_id` in `is_state()`, `is_open()` and `is_closed()`.
 
 ### Removed
-* Sub-classing of `unittest.TestCase`
-* Setting repository ID through class attributes
+- Sub-classing of `unittest.TestCase`
+- Setting repository ID through class attributes
 
 ## [1.2.0] - 2019-08-14
 
 ### Added
-* Caching functionality to speed up tests involving network calls and prevent API quota depletion.
-* `CACHE_INVALIDATION_IN_SECONDS` [environment variables](README.md#environment-variables) for changing default cache invalidation period or disabling cache completely. 
+- Caching functionality to speed up tests involving network calls and prevent API quota depletion.
+- `CACHE_INVALIDATION_IN_SECONDS` [environment variables](README.md#environment-variables) for changing default cache invalidation period or disabling cache completely.
 
 ## [1.1.1] - 2019-08-08
 
 ### Fixed
-* Drops Python 3.5 from classifiers as it was never supported.
+- Drops Python 3.5 from classifiers as it was never supported.
 
 ## [1.1.0] - 2019-08-05
 
 ### Added
-* `GITHUB_USER_NAME` and `GITHUB_PERSONAL_ACCESS_TOKEN` [environment variables](README.md#environment-variables) to allow authentication with GitHub API and higher API rate limit (5000/API token/hour instead of the default 60/host/hour).
+- `GITHUB_USER_NAME` and `GITHUB_PERSONAL_ACCESS_TOKEN` [environment variables](README.md#environment-variables) to allow authentication with GitHub API and higher API rate limit (5000/API token/hour instead of the default 60/host/hour).
 
 ## [1.0.0] - 2019-08-04
 
 ### Added
-* Initial source code
-* Error handling printing out full message received.
-* Error handling of exceeded API rate limit, showing current quota and time until quota reset.
+- Initial source code
+- Error handling printing out full message received.
+- Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
 [Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/3.0.0...HEAD
 [3.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.3.0...releases/3.0.0

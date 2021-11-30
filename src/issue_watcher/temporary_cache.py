@@ -25,7 +25,7 @@ class TemporaryCache:
         except ValueError:
             value = os.environ[self._ENV_VAR_EXPIRY]
             warnings.warn(
-                "issuewatcher seems to be improperly configured. Expected "
+                "issue_watcher seems to be improperly configured. Expected "
                 f"'{self._ENV_VAR_EXPIRY}' environment variable to be 0 or "
                 f"positive integer. However, value of '{value}' was used "
                 f"instead and will be ignored. Using default value of "
@@ -36,7 +36,7 @@ class TemporaryCache:
     @contextmanager
     def _session(self, save: bool) -> Iterator[DefaultDict[str, Dict[Union[str, int], Tuple[str, int]]]]:
         try:
-            with open(self._TEMP_FILE_NAME, "r") as temp_file:
+            with open(self._TEMP_FILE_NAME, "r", encoding="utf-8") as temp_file:
                 cache = load(temp_file)
             if not isinstance(cache, dict):
                 raise ValueError("Cache must be a dict.")
@@ -48,7 +48,7 @@ class TemporaryCache:
             yield cache
         finally:
             if save:
-                with open(self._TEMP_FILE_NAME, "w") as temp_file:
+                with open(self._TEMP_FILE_NAME, "w", encoding="utf-8") as temp_file:
                     dump(cache, temp_file)
 
     def __setitem__(self, key: Union[str, int], value: str) -> None:
@@ -64,8 +64,8 @@ class TemporaryCache:
             try:
                 value, timestamp = cache[self._project_identifier][key]
                 timestamp = int(timestamp)
-            except ValueError:
-                raise KeyError()
+            except ValueError as exc:
+                raise KeyError() from exc
 
         if timestamp < time.time() - self._expire_in_seconds:
             raise KeyError()

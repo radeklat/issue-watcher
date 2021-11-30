@@ -3,13 +3,9 @@ from unittest.mock import MagicMock
 import pytest
 from requests import HTTPError
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 from tests.unit.github.constants import CURRENT_NUMBER_OF_RELEASES, ISSUE_NUMBER
-from tests.unit.github.mocking import (
-    set_issue_state,
-    set_limit_exceeded,
-    set_number_of_releases_to,
-)
+from tests.unit.github.mocking import set_issue_state, set_limit_exceeded, set_number_of_releases_to
 
 
 class TestHttpErrorRaising:

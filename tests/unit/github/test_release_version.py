@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 from tests.unit.github.mocking import set_git_tags_to
 
 
@@ -92,6 +92,8 @@ class TestReleaseVersionCheck:
             assert_github_issue_no_cache.fixed_in("2.0.0", pattern="releases/(?P<version>.*)")
 
     @staticmethod
-    def test_it_refuses_pattern_without_a_group(assert_github_issue_no_cache: AssertGitHubIssue,):
+    def test_it_refuses_pattern_without_a_group(
+        assert_github_issue_no_cache: AssertGitHubIssue,
+    ):
         with pytest.raises(ValueError, match=".*group.*"):
             assert_github_issue_no_cache.fixed_in("2.0.0", pattern="no_group")
