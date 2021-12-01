@@ -14,6 +14,8 @@ Types of changes are:
 
 ## [Unreleased]
 
+## [4.0.0] - 2021-12-01
+
 ### Added
 
 - Support for Python 3.9 and 3.10
@@ -123,7 +125,8 @@ Types of changes are:
 - Error handling printing out full message received.
 - Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/releases/3.0.0...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/4.0.0...HEAD
+[4.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/3.0.0...4.0.0
 [3.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.3.0...releases/3.0.0
 [2.3.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.4...releases/2.3.0
 [2.2.4]: https://github.com/radeklat/issue-watcher/compare/releases/2.2.3...releases/2.2.4

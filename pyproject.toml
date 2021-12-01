@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "issue-watcher"
-version = "3.0.0"
+version = "4.0.0"
 description = "Python test cases watching when an issue is closed and failing a test to let you know fixed functionality is available."
 authors = ["Radek Lát <radek.lat@gmail.com>"]
 license = "MIT License"
