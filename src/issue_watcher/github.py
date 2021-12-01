@@ -10,13 +10,13 @@ import requests
 from packaging.version import InvalidVersion, Version
 from requests import HTTPError, Response
 
-from issuewatcher.temporary_cache import TemporaryCache
-from issuewatcher.version_check import check_python_support
+from issue_watcher.temporary_cache import TemporaryCache
+from issue_watcher.version_check import check_python_support
 
 
 class GitHubIssueState(Enum):
-    open = "open"
-    closed = "closed"
+    OPEN = "open"
+    CLOSED = "closed"
 
 
 class AssertGitHubIssue:
@@ -42,7 +42,7 @@ class AssertGitHubIssue:
         if not all(self._auth):
             if any(self._auth):
                 warnings.warn(
-                    "issuewatcher seems to be improperly configured. Expected both "
+                    "issue_watcher seems to be improperly configured. Expected both "
                     f"'{self._ENV_VAR_USERNAME}' and '{self._ENV_VAR_TOKEN}' environment "
                     "variable to be set or both unset. However, only one is set, GitHub "
                     "authentication remains disabled and API rate limiting will be "
@@ -124,7 +124,7 @@ class AssertGitHubIssue:
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.is_state(issue_id, GitHubIssueState.open, msg)
+        self.is_state(issue_id, GitHubIssueState.OPEN, msg)
 
     def is_closed(self, issue_id: int, msg: str = "") -> None:
         """Check if given issue is closed.
@@ -132,7 +132,7 @@ class AssertGitHubIssue:
         :raises requests.HTTPError: When response status code from GitHub is not 200.
         :raises AssertionError: When test fails.
         """
-        self.is_state(issue_id, GitHubIssueState.closed, msg)
+        self.is_state(issue_id, GitHubIssueState.CLOSED, msg)
 
     def current_release(self, current_release_number: Optional[int] = None) -> None:
         """Checks number of releases of watched repository.

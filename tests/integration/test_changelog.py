@@ -2,12 +2,13 @@ from os.path import dirname, join
 
 import pytest
 
-from issuewatcher import __version__
+from issue_watcher import __version__
 
 
 @pytest.fixture(scope="module")
 def changelog() -> str:
-    return open(join(dirname(__file__), "../../CHANGELOG.md"), "r").read()
+    with open(join(dirname(__file__), "../../CHANGELOG.md"), "r", encoding="utf-8") as file:
+        return file.read()
 
 
 class TestChangeLog:

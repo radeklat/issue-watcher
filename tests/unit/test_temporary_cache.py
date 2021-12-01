@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from ujson import dumps, loads
 
-from issuewatcher.temporary_cache import TemporaryCache
+from issue_watcher.temporary_cache import TemporaryCache
 
 _PROJECT = "radeklat/issue-watcher"
 _KEY_IN = "1"
@@ -15,7 +15,7 @@ _VALUE = "test value"
 
 
 def _create_temp_file(value: Union[str, Dict, List] = ""):
-    with open(TemporaryCache._TEMP_FILE_NAME, "w") as temp_file:
+    with open(TemporaryCache._TEMP_FILE_NAME, "w", encoding="utf-8") as temp_file:
         temp_file.write(value if isinstance(value, str) else dumps(value))
 
 
@@ -27,7 +27,7 @@ def _remove_temp_file():
 
 
 def _read_temp_file() -> str:
-    with open(TemporaryCache._TEMP_FILE_NAME, "r") as temp_file:
+    with open(TemporaryCache._TEMP_FILE_NAME, "r", encoding="utf-8") as temp_file:
         return temp_file.read()
 
 

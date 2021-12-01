@@ -3,7 +3,7 @@ import warnings
 
 from semver import VersionInfo
 
-from issuewatcher.constants import (
+from issue_watcher.constants import (
     APPLICATION_NAME,
     MAX_SUPPORTED_PYTHON_VERSION_EXCLUSIVE,
     MIN_SUPPORTED_PYTHON_VERSION_INCLUSIVE,

@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 from tests.unit.github.constants import REPOSITORY_ID
 
 
@@ -16,7 +16,7 @@ def assert_github_issue_no_cache():
 
 @pytest.fixture()
 def requests_mock():
-    requests_patcher = patch("issuewatcher.github.requests")
+    requests_patcher = patch("issue_watcher.github.requests")
 
     try:
         yield requests_patcher.start()

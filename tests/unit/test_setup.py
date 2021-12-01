@@ -4,7 +4,8 @@ from subprocess import call
 
 import pytest
 
-from issuewatcher.constants import APPLICATION_NAME, __version__ as app_version
+from issue_watcher.constants import APPLICATION_NAME
+from issue_watcher.constants import __version__ as app_version
 
 SOURCES_ROOT = abspath(join(dirname(__file__), "..", ".."))
 
@@ -27,7 +28,7 @@ def build_return_code():
     cleanup_build_artefacts()
 
     try:
-        yield call(["inv", "build"])
+        yield call(["poetry", "build"])
     finally:
         cleanup_build_artefacts()
 

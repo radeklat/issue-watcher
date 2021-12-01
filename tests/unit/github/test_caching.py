@@ -3,7 +3,7 @@ from time import perf_counter
 
 import pytest
 
-from issuewatcher import AssertGitHubIssue
+from issue_watcher import AssertGitHubIssue
 from tests.unit.github.constants import CLOSED_ISSUE_NUMBER, REPOSITORY_ID
 
 # False positive caused by pytest fixtures and class use
