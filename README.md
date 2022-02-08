@@ -9,7 +9,7 @@ This library provides several useful assertions that are watching when an issue 
 ![PyPI - License](https://img.shields.io/pypi/l/issue-watcher)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/issue-watcher)
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/radeklat/issue-watcher)
-![Maintenance](https://img.shields.io/maintenance/yes/2021)
+![Maintenance](https://img.shields.io/maintenance/yes/2022)
 ![GitHub last commit](https://img.shields.io/github/last-commit/radeklat/issue-watcher)
 
 # Installation

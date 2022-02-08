@@ -1,4 +1,4 @@
-__version__: str = "4.0.0"
+__version__: str = "4.0.1"
 APPLICATION_NAME: str = "issue-watcher"
 MIN_SUPPORTED_PYTHON_VERSION_INCLUSIVE: str = "3.7.0"
 MAX_SUPPORTED_PYTHON_VERSION_EXCLUSIVE: str = "3.11.0"
