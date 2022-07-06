@@ -62,57 +62,9 @@ disable=missing-docstring,
         missing-return-type-doc,
         missing-yield-doc,
         missing-yield-type-doc,
-        apply-builtin,
         logging-fstring-interpolation,
-        backtick,
-        basestring-builtin,
-        buffer-builtin,
-        cmp-builtin,
-        cmp-method,
-        coerce-builtin,
-        coerce-method,
-        delslice-method,
-        dict-iter-method,
-        dict-view-method,
-        execfile-builtin,
-        file-builtin,
-        filter-builtin-not-iterating,
-        getslice-method,
-        hex-method,
-        import-star-module-level,
-        indexing-exception,
-        input-builtin,
-        intern-builtin,
-        long-builtin,
-        long-suffix,
-        map-builtin-not-iterating,
-        metaclass-assignment,
-        next-method-called,
-        no-absolute-import,
-        nonzero-method,
-        oct-method,
-        old-division,
-        old-ne-operator,
-        old-octal-literal,
-        old-raise-syntax,
-        parameter-unpacking,
-        print-statement,
         raising-string,
-        range-builtin-not-iterating,
-        raw_input-builtin,
-        reduce-builtin,
-        reload-builtin,
-        round-builtin,
-        setslice-method,
-        standarderror-builtin,
-        unichr-builtin,
-        unicode-builtin,
-        unpacking-in-except,
-        using-cmp-argument,
-        xrange-builtin,
-        zip-builtin-not-iterating,
         protected-access,
-        bad-continuation,
         redefined-outer-name,
         too-few-public-methods,
 
@@ -289,13 +241,6 @@ max-line-length=120
 
 # Maximum number of lines in a module
 max-module-lines=500
-
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.

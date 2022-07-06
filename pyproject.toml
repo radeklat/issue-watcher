@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "issue-watcher"
-version = "4.0.1"
+version = "4.0.2"
 description = "Python test cases watching when an issue is closed and failing a test to let you know fixed functionality is available."
 authors = ["Radek Lát <radek.lat@gmail.com>"]
 license = "MIT License"
@@ -34,7 +34,7 @@ semver = "*"
 ujson = "*"
 
 [tool.poetry.dev-dependencies]
-delfino = {version = "^0.13.0", extras = ["upload_to_pypi", "verify_all"]}
+delfino = {version = "^0.13.1", extras = ["upload_to_pypi", "verify_all"]}
 types-requests = "*"
 typing-extensions = {python = "<=3.8", version = "*"}
 zipp = {python = "<3.8", version = "*"}
