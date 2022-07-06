@@ -14,6 +14,12 @@ Types of changes are:
 
 ## [Unreleased]
 
+## [4.0.2] - 2022-07-06
+
+### Fixed
+
+- Dependencies update
+
 ## [4.0.1] - 2022-02-08
 
 ### Fixed
@@ -132,7 +138,8 @@ Types of changes are:
 - Error handling printing out full message received.
 - Error handling of exceeded API rate limit, showing current quota and time until quota reset.
 
-[Unreleased]: https://github.com/radeklat/issue-watcher/compare/4.0.1...HEAD
+[Unreleased]: https://github.com/radeklat/issue-watcher/compare/4.0.2...HEAD
+[4.0.2]: https://github.com/radeklat/issue-watcher/compare/releases/4.0.1...4.0.2
 [4.0.1]: https://github.com/radeklat/issue-watcher/compare/releases/4.0.0...4.0.1
 [4.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/3.0.0...4.0.0
 [3.0.0]: https://github.com/radeklat/issue-watcher/compare/releases/2.3.0...releases/3.0.0
