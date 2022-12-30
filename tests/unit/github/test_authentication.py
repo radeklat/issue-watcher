@@ -40,7 +40,10 @@ class TestAuthentication:
         try:
             warnings.simplefilter("ignore", category=RuntimeWarning)
             self._init_with_user_name_token_and_assert(
-                requests_mock, username, token, lambda _: requests_mock.get.assert_called_with(ANY, auth=None)
+                requests_mock,
+                username,
+                token,
+                lambda _: requests_mock.get.assert_called_with(ANY, auth=None, timeout=ANY),
             )
         finally:
             warnings.resetwarnings()
@@ -65,7 +68,9 @@ class TestAuthentication:
         credentials = ("some username", "some token")
 
         self._init_with_user_name_token_and_assert(
-            requests_mock, *credentials, assertion=lambda _: requests_mock.get.assert_called_with(ANY, auth=credentials)
+            requests_mock,
+            *credentials,
+            assertion=lambda _: requests_mock.get.assert_called_with(ANY, auth=credentials, timeout=ANY)
         )
 
     def test_it_is_suggested_when_api_rate_exceeded(self, requests_mock: MagicMock):

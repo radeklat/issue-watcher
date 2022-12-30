@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "issue-watcher"
-version = "4.0.2"
+version = "5.0.0"
 description = "Python test cases watching when an issue is closed and failing a test to let you know fixed functionality is available."
 authors = ["Radek Lát <radek.lat@gmail.com>"]
 license = "MIT License"
@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Bug Tracking",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Quality Assurance",
@@ -27,19 +28,22 @@ keywords = ["pytest", "github", "issues", "testing"]
 homepage = "https://github.com/radeklat/issue-watcher"
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
+python = ">=3.7.2,<=3.11"
 packaging = "*"
 requests = "*"
 semver = "*"
 ujson = "*"
 
 [tool.poetry.dev-dependencies]
-delfino = {version = "^0.13.1", extras = ["upload_to_pypi", "verify_all"]}
+delfino-core = {version = "^4.0.1", extras = ["verify_all", "dependencies-update"]}
 types-requests = "*"
 typing-extensions = {python = "<=3.8", version = "*"}
 zipp = {python = "<3.8", version = "*"}
 importlib-metadata = {python = "<3.8", version = "*"}
 types-ujson = "*"
+
+[tool.poetry.group.dev.dependencies]
+types-toml = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -93,6 +97,7 @@ follow_imports = "silent"
 # Source code dependencies
 module = [
     "semver.*",
+    "delfino.*",
 ]
 ignore_missing_imports = true
 
@@ -108,10 +113,4 @@ add-ignore = [
     "D413",  # "Missing blank line after last section"
 ]
 
-[tool.delfino]
-reports_directory = "reports"
-sources_directory = "src"
-tests_directory = "tests"
-
-# Directories under `tests_directory` that contain specific test type.
-test_types = ["unit", "integration"]
+[tool.delfino.plugins.delfino-core]

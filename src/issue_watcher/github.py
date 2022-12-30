@@ -10,8 +10,8 @@ import requests
 from packaging.version import InvalidVersion, Version
 from requests import HTTPError, Response
 
+from issue_watcher.constants import DEFAULT_REQUESTS_TIMEOUT_SEC
 from issue_watcher.temporary_cache import TemporaryCache
-from issue_watcher.version_check import check_python_support
 
 
 class GitHubIssueState(Enum):
@@ -32,8 +32,6 @@ class AssertGitHubIssue:
         :param repository_id: GitHub repository ID formatted as "owner/repository name".
         :raises ValueError: When the repository ID is not two slash separated strings.
         """
-        check_python_support()
-
         self._rate_limit_exceeded_extra_msg: str = ""
         self._auth: Optional[Tuple[str, str]] = (
             os.environ.get(self._ENV_VAR_USERNAME, ""),
@@ -102,7 +100,9 @@ class AssertGitHubIssue:
         except KeyError:
             # Response documented at https://developer.github.com/v3/issues/
             response: Response = requests.get(
-                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}", auth=self._auth
+                f"{self._URL_API}/repos/{self._repository_id}/{issue_identifier}",
+                auth=self._auth,
+                timeout=DEFAULT_REQUESTS_TIMEOUT_SEC,
             )
             self._handle_connection_error(response)
 
@@ -153,7 +153,7 @@ class AssertGitHubIssue:
             actual_release_count = int(self._cache["release_count"])
             pass  # pylint: disable=unnecessary-pass; this line should be covered
         except (KeyError, ValueError):
-            response: Response = requests.get(releases_url, auth=self._auth)
+            response: Response = requests.get(releases_url, auth=self._auth, timeout=DEFAULT_REQUESTS_TIMEOUT_SEC)
             self._handle_connection_error(response)
 
             actual_release_count = len(response.json())
@@ -237,7 +237,7 @@ class AssertGitHubIssue:
             latest_version = Version(self._cache["latest_version"])
             pass  # pylint: disable=unnecessary-pass; this line should be covered
         except (KeyError, ValueError):
-            response: Response = requests.get(releases_url, auth=self._auth)
+            response: Response = requests.get(releases_url, auth=self._auth, timeout=DEFAULT_REQUESTS_TIMEOUT_SEC)
             self._handle_connection_error(response)
 
             versions = self._ordered_version_numbers(response.json(), pattern)
