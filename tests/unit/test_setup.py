@@ -1,36 +1,24 @@
-from os.path import abspath, dirname, isfile, join
+from pathlib import Path
 from shutil import rmtree
 from subprocess import call
 
 import pytest
-
-from issue_watcher.constants import APPLICATION_NAME
-from issue_watcher.constants import __version__ as app_version
-
-SOURCES_ROOT = abspath(join(dirname(__file__), "..", ".."))
-
-UNDERSCORED_APPLICATION_NAME = APPLICATION_NAME.replace("-", "_")
-
-BUILD_ARTEFACTS = [
-    join(SOURCES_ROOT, folder) for folder in ["dist", "build", UNDERSCORED_APPLICATION_NAME + ".egg-info"]
-]
-
-# pylint: disable=redefined-outer-name
+from delfino.models import Poetry
 
 
-def cleanup_build_artefacts():
-    for folder in BUILD_ARTEFACTS:
-        rmtree(folder, ignore_errors=True)
+def cleanup_build_artefacts(project_root: Path, app_name: str):
+    for folder in ["dist", "build", app_name.replace("-", "_") + ".egg-info"]:
+        rmtree(project_root / folder, ignore_errors=True)
 
 
 @pytest.fixture(scope="session")
-def build_return_code():
-    cleanup_build_artefacts()
+def build_return_code(poetry, project_root):
+    cleanup_build_artefacts(project_root, poetry.name)
 
     try:
         yield call(["poetry", "build"])
     finally:
-        cleanup_build_artefacts()
+        cleanup_build_artefacts(project_root, poetry.name)
 
 
 class TestBuildProcess:
@@ -39,14 +27,14 @@ class TestBuildProcess:
         assert build_return_code == 0
 
     @staticmethod
-    def assert_file_is_build(suffix, replace_hyphens=False):
-        app_name = UNDERSCORED_APPLICATION_NAME if replace_hyphens else APPLICATION_NAME
-        filename = join(BUILD_ARTEFACTS[0], f"{app_name}-{app_version}{suffix}")
+    def assert_file_is_build(project_root: Path, poetry: Poetry, suffix: str):
+        app_name = poetry.name.replace("-", "_")
+        filename = project_root / "dist" / f"{app_name}-{poetry.version}{suffix}"
 
-        assert isfile(filename), f"File '{filename}' does not exist or is not a file."
+        assert filename.is_file(), f"File '{filename}' does not exist or is not a file."
 
-    def test_it_creates_whl_file(self):
-        self.assert_file_is_build("-py3-none-any.whl", replace_hyphens=True)
+    def test_it_creates_whl_file(self, poetry, project_root):
+        self.assert_file_is_build(project_root, poetry, "-py3-none-any.whl")
 
-    def test_it_creates_tar_file(self):
-        self.assert_file_is_build(".tar.gz")
+    def test_it_creates_tar_file(self, poetry, project_root):
+        self.assert_file_is_build(project_root, poetry, ".tar.gz")
